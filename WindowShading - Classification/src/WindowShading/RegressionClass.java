@@ -14,6 +14,7 @@ public class RegressionClass
 		Classifier defaultClassifier = new Classifier();
 		Classifier optimized = new Classifier(0.35, 0.281, 250, "o", folds);
 		
+		System.out.println("test 1 2 3 - classifier");
 		
 		
 		// default
