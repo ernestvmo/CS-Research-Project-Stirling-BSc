@@ -5,6 +5,7 @@ public class SolutionsLoader
 	private double[][] set1;
 	private double[][] set2;
 	private double[][] set3;
+	private double[][] setAll;
 	
 	public SolutionsLoader()
 	{
@@ -16,8 +17,44 @@ public class SolutionsLoader
 		set1 = setup1();
 		set2 = setup2();
 		set3 = setup3();
+		setAll = setupAll(set1, set2, set3);
 	}
 	
+	private double [][]	setupAll(double[][] set1, double[][] set2, double[][] set3)
+	{
+		double [][] all = new double[set1.length + set2.length + set3.length][set1[0].length];
+		int count = 0;
+		
+		for (int i = 0; i < set1.length; i++)
+		{
+			for (int j = 0; j < set1[i].length; j++)
+			{
+				all[count][j] = set1[i][j];
+			}
+			count++;
+		}
+		
+		for (int i = 0; i < set2.length; i++)
+		{
+			for (int j = 0; j < set2[i].length; j++)
+			{
+				all[count][j] = set2[i][j];
+			}
+			count++;
+		}
+		
+		for (int i = 0; i < set3.length; i++)
+		{
+			for (int j = 0; j < set3[i].length; j++)
+			{
+				all[count][j] = set3[i][j];
+			}
+			count++;
+		}
+
+		return all;
+	}
+
 	private double[][] setup1()
 	{
 		double[][] set = {{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
@@ -3643,5 +3680,10 @@ public class SolutionsLoader
 	public double[][] getSet3()
 	{
 		return set3;
+	}
+
+	public double[][] getAll()
+	{
+		return setAll;
 	}
 }

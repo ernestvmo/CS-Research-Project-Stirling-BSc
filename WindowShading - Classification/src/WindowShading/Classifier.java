@@ -62,6 +62,8 @@ public class Classifier
 	// Cross validation param
 	private int numFolds;
 	
+	private Evaluation e;
+	
 	public Classifier()
 	{
 		this.learningRate = 0.3;
@@ -105,6 +107,8 @@ public class Classifier
 				return sl.getSet2();
 			case 3 :
 				return sl.getSet3();
+			case 0 :
+				return sl.getAll();
 			default :
 				return null;
 		}
@@ -143,7 +147,7 @@ public class Classifier
 		testSet.setClass(classAttribute);
 		
 		
-		mlpSection(trainingSet, testSet, 100);
+		mlpSection(trainingSet, testSet, set.length);
 	}
 	
 	private void mlpSection(Instances trainingSet, Instances testSet, int population_size)
@@ -215,9 +219,10 @@ public class Classifier
 			
 			
 			// Evaluate model
-			Evaluation eval = new Evaluation(trainingSet);
-			eval.crossValidateModel(mlp, trainingSet, numFolds, new Random(1));
-			System.out.println(eval.toSummaryString());
+			e = new Evaluation(trainingSet);
+			e.crossValidateModel(mlp, trainingSet, numFolds, new Random(1));
+//			System.out.println(e.toSummaryString());
+			
 			
 			// Predict
 			double mse = 0;
@@ -229,12 +234,17 @@ public class Classifier
 				mse += Math.pow(prediction - testSet.instance(i).classValue(), 2);
 			}
 			
-			System.out.println("Mean Square Error: " + Math.sqrt(mse / population_size));
+//			System.out.println("Mean Square Error: " + Math.sqrt(mse / population_size));
 		}
 		catch (Exception e) 
 		{
 			e.printStackTrace();
 		}
+	}
+	
+	public Evaluation getEvaluation()
+	{
+		return e;
 	}
 }
 
