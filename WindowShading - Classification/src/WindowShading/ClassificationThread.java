@@ -27,7 +27,6 @@ public class ClassificationThread extends Thread
 		
 		try
 		{
-
 			for (double i = lower; i < upper; i++)
 			{
 				for (double j = 1; j <= 99; j++)
