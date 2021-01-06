@@ -8,12 +8,17 @@ public class RegressionClass
 {
 	public static void main(String[] args) throws Exception
 	{
-		ClassificationThread t1 = new ClassificationThread(1, 2);
-		ClassificationThread t2 = new ClassificationThread(11, 20);
+		ClassificationThread t1 = new ClassificationThread("learningRate", 0, 100, 0.26);
+		
+		ClassificationThread t2 = new ClassificationThread("momentum", 0, 100, 0.75);
 		
 		t1.start();
 		t2.start();
 		
+//		Classifier classifier = new Classifier(0.26, 0.89, 500, "60", 5);
+//		classifier.classify(0);
+//		double coef = classifier.getEvaluation().correlationCoefficient();
+//		System.out.println("Coefficient: " + coef);
 		
 //		double defaultLearningRate = 0.3;
 //		double defaultMomemtum = 0.2;
