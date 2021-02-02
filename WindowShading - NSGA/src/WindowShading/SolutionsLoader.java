@@ -6,7 +6,6 @@ public class SolutionsLoader
 	private double[][] set2;
 	private double[][] set3;
 	private double[][] setAll;
-	private double[][] both;
 	
 	public SolutionsLoader()
 	{
@@ -19,34 +18,6 @@ public class SolutionsLoader
 		set2 = setup2();
 		set3 = setup3();
 		setAll = setupAll(set1, set2, set3);
-		both = setupWeird(set1, set2);
-	}
-	
-	private double[][] setupWeird(double[][] set1, double[][] set2)
-	{
-		double[][] both = new double[set1.length + set2.length][set1[0].length];
-		
-		int count = 0;
-		
-		for (int i = 0; i < set1.length; i++)
-		{
-			for (int j = 0; j < set1[i].length; j++)
-			{
-				both[count][j] = set1[i][j];
-			}
-			count++;
-		}
-		
-		for (int i = 0; i < set2.length; i++)
-		{
-			for (int j = 0; j < set2[i].length; j++)
-			{
-				both[count][j] = set2[i][j];
-			}
-			count++;
-		}
-		
-		return both;
 	}
 	
 	private double [][]	setupAll(double[][] set1, double[][] set2, double[][] set3)
@@ -3714,10 +3685,5 @@ public class SolutionsLoader
 	public double[][] getAll()
 	{
 		return setAll;
-	}
-	
-	public double[][] getWeird()
-	{
-		return both;
 	}
 }

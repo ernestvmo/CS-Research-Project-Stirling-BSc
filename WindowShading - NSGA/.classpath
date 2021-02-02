@@ -8,8 +8,5 @@
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="lib" path="lib/bop.jar"/>
 	<classpathentry kind="lib" path="C:/Program Files/Weka-3-8-4/weka.jar" sourcepath="C:/Program Files/Weka-3-8-4/weka-src.jar"/>
-	<classpathentry kind="lib" path="lib/arpack_combined.jar"/>
-	<classpathentry kind="lib" path="lib/core.jar"/>
-	<classpathentry kind="lib" path="lib/mtj.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
