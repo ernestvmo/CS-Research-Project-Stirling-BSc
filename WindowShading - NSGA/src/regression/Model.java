@@ -15,6 +15,8 @@ public class Model
 	private Evaluation e;
 	private double[][] set;
 	
+	private MultilayerPerceptron mlp;
+	private Instances trainingSet;
 	
 	public Model(double[][] set)
 	{
@@ -25,7 +27,7 @@ public class Model
 	{
 		ArrayList<Attribute> attributes = createModelAttributes();
 		
-		Instances trainingSet = createSet(attributes, set);
+		trainingSet = createSet(attributes, set);
 		
 		// TODO delete - temporary
 		double[][] temp = getTen(set);
@@ -79,7 +81,7 @@ public class Model
 	{
 		try
 		{
-			MultilayerPerceptron mlp = new MultilayerPerceptron();
+			mlp = new MultilayerPerceptron();
 			mlp.buildClassifier(trainingSet);
 			
 			e = new Evaluation(trainingSet);
@@ -89,6 +91,31 @@ public class Model
 		{
 			e.printStackTrace();
 		}
+	}
+
+	public double predict(boolean[] alleles) 
+	{
+		double[] temp = new double[alleles.length + 1];
+		for (int i = 0; i < alleles.length; i++) {
+			temp[i] = alleles[i] ? 1 : 0;
+		}
+		
+		Instances instances = new Instances("Training Set", createModelAttributes(), 1);
+		instances.add(new DenseInstance(1.0, temp));
+		instances.setClassIndex(trainingSet.numAttributes() - 1);
+		
+		double prediction = 0;
+		
+		while (prediction < 1 || Double.isNaN(prediction)) {
+			try {
+				prediction = mlp.classifyInstance(instances.instance(0));
+			} 
+			catch (Exception e) {
+				System.out.println(instances.instance(0));
+				e.printStackTrace();
+			}
+		}
+		return prediction;
 	}
 	
 	public Evaluation getEvaluation()

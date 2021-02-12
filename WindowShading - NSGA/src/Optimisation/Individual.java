@@ -5,8 +5,12 @@
 
 package Optimisation;
 
+import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Random;
 import java.util.Set;
+
+import regression.Model;
 
 /**
  * Bit string individuals with 2 objectives
@@ -31,9 +35,13 @@ public class Individual
 	public Individual(FitnessFunction ff, int size, java.util.Random r)
 	{
 		boolean[] a = new boolean[size];
+//		for (int i = 0; i < a.length; i++)
+//		{
+//			a[i] = r.nextBoolean();
+//		}
 		for (int i = 0; i < a.length; i++)
 		{
-			a[i] = r.nextBoolean();
+			a[i] = r.nextDouble() < ((double) i / 100);
 		}
 
 		init(ff, a);
@@ -57,41 +65,39 @@ public class Individual
 	 * call the evaluator and evaluate - regardless of whether or not it's
 	 * already been done.
 	 */
-	public void forceEvaluate()
-	{
-		FitnessFunction.MOFitness f = ff.evaluate(this);
-		this.fitness1 = f.fitness1;
-		this.fitness2 = f.fitness2;
-		this.overallConstraintViolation = f.overallConstraintViolation;
-	}
+//	public void forceEvaluate()
+//	{
+//		FitnessFunction.MOFitness f = ff.evaluate(this);
+//		this.fitness1 = f.fitness1;
+//		this.fitness2 = f.fitness2;
+//		this.overallConstraintViolation = f.overallConstraintViolation;
+//	}
 
 	/**
 	 * only evaluate if necessary (not already done). This allows it to be done
 	 * at a better time for the algorithm (e.g. as part of a batch within
 	 * threads instead of when the fitnesses are next retrieved)
 	 */
-	public void evaluate()
-	{
-		if (Double.isNaN(fitness1) || Double.isNaN(fitness2)
-				|| Double.isNaN(overallConstraintViolation))
-		{
-			forceEvaluate();
-		}
-	}
+//	public void evaluate()
+//	{
+//		if (Double.isNaN(fitness1) || Double.isNaN(fitness2)
+//				|| Double.isNaN(overallConstraintViolation))
+//		{
+//			forceEvaluate();
+//		}
+//	}
 	
-	public void evaluate_bis()
+	public void evaluate_bis(Model model)
 	{
-		int f1 = 0;
-		int f2 = 0;
 		int count = 0;
 		
-		
 		for (int i = 0; i < alleles.length; i++)
-			if (alleles[i] == true)
-				count++;
+			count += alleles[i] ? 1 : 0;
 
-		this.fitness1 = 1200 - count*10;
-		this.fitness2 = count*100;
+		double cost = 100 * (120 - count) + 350 * count;
+		
+		this.fitness1 = cost;
+		this.fitness2 = model.predict(alleles);
 	}
 
 	public boolean[] getAlleles()
@@ -116,46 +122,51 @@ public class Individual
 		// first check constraints
 		boolean thisDominatesThat = false;
 
-		thisDominatesThat |= (this.isFeasible() && !that.isFeasible());
-		thisDominatesThat |= (!this.isFeasible() && !this.isFeasible()
-				&& (this.getOverallConstraintViolation() < that
-						.getOverallConstraintViolation()));
-
-		thisDominatesThat |= (this.isFeasible() && that.isFeasible()
-				&& (((this.getFitness1() <= that.getFitness1())
-						&& (this.getFitness2() < that.getFitness2()))
-						|| ((this.getFitness1() < that.getFitness1()) && (this
-								.getFitness2() <= that.getFitness2()))));
+		thisDominatesThat = (
+				(this.fitness1 <= that.fitness1) && (this.fitness2 <= that.fitness2)) 
+					&& 
+				((this.fitness1 < that.fitness1) || (this.fitness2 < that.fitness2));
+		
+//		thisDominatesThat |= (this.isFeasible() && !that.isFeasible());
+//		thisDominatesThat |= (!this.isFeasible() && !this.isFeasible()
+//				&& (this.getOverallConstraintViolation() < that
+//						.getOverallConstraintViolation()));
+//
+//		thisDominatesThat |= (this.isFeasible() && that.isFeasible()
+//				&& (((this.getFitness1() <= that.getFitness1())
+//						&& (this.getFitness2() < that.getFitness2()))
+//						|| ((this.getFitness1() < that.getFitness1()) && (this
+//								.getFitness2() <= that.getFitness2()))));
 
 		return thisDominatesThat;
 	}
 
 	public double getFitness1()
 	{
-		if (Double.isNaN(fitness1))
-		{
-			forceEvaluate();
-		}
+//		if (Double.isNaN(fitness1))
+//		{
+//			forceEvaluate();
+//		}
 
 		return fitness1;
 	}
 
 	public double getFitness2()
 	{
-		if (Double.isNaN(fitness2))
-		{
-			forceEvaluate();
-		}
+//		if (Double.isNaN(fitness2))
+//		{
+//			forceEvaluate();
+//		}
 
 		return fitness2;
 	}
 
 	public double getOverallConstraintViolation()
 	{
-		if (Double.isNaN(overallConstraintViolation))
-		{
-			forceEvaluate();
-		}
+//		if (Double.isNaN(overallConstraintViolation))
+//		{
+//			forceEvaluate();
+//		}
 
 		return overallConstraintViolation;
 	}
@@ -165,6 +176,20 @@ public class Individual
 		return this.getOverallConstraintViolation() <= 0;
 	}
 
+	public String toString()
+	{
+		StringBuffer buff = new StringBuffer();
+		
+		for (int i = 0; i < alleles.length; i++) {
+			if (alleles[i])
+				buff.append("1");
+			else
+				buff.append("0");
+		}
+		
+		return buff.toString();
+	}
+	
 	public static class Objective1Comparator implements Comparator<Individual>
 	{
 		public int compare(Individual i1, Individual i2)

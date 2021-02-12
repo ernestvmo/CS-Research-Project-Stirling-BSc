@@ -7,6 +7,6 @@
 	</classpathentry>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="lib" path="lib/bop.jar"/>
-	<classpathentry kind="lib" path="C:/Program Files/Weka-3-8-4/weka.jar" sourcepath="C:/Program Files/Weka-3-8-4/weka-src.jar"/>
+	<classpathentry kind="lib" path="C:/Program Files/Weka-3-8-4/weka.jar" sourcepath="lib/weka.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
