@@ -5,11 +5,23 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 
+/**
+ * File loader class.
+ * 
+ * @author Ernest Vanmosuinck
+ */
 public class Loader
 {
+	/** The file name to extract the data from. */
 	private static String filename = "solutions.bin";
 	
-	public static double[][] load() 
+	/**
+	 * This method will load the 2D array stored in a project binary file. 
+	 * The file name and location is preset by the program.
+	 * 
+	 * @return 2D array of pre-evaluated solutions.
+	 */
+	public static double[][] load()  
 	{
 		double[][] sols = null;
 		
@@ -19,8 +31,10 @@ public class Loader
 			sols = (double[][]) ois.readObject();
 			ois.close();
 		}
-		catch (Exception e) {
+		catch (IOException | ClassNotFoundException e) 
+		{
 			// TODO: handle exception
+			e.printStackTrace();
 		}
 		
 		return sols;

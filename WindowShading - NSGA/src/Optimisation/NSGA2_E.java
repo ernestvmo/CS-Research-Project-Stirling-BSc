@@ -11,65 +11,77 @@ import WindowShading.WindowShadingFitnessFunction;
 import plotting.Plotting;
 import regression.Model;
 
+/**
+ * Class for the Non-dominated Sorting Genetic Algorithm.
+ * 
+ * @author Ernest Vanmosuinck
+ */
 public class NSGA2_E
 {
 	private FitnessFunction ff;
+	/** Random object. */
 	private Random r;
 
+	/** The number of windows on a building's façade. */
 	private int windowsCount = 120;
+	/** Number of solutions per evaluations. */
 	private int numSolutions = 100;
+	/** Number of threads running at the same time. */
 	private int numThreads = 10;
-
+	/** Total number of evaluations. */
 	private int maxEvals = 5000;
 
+	// ************* NSGA-2 options *************
+	/** Selection rate. */
 	private double selectionRate = 0.5;
+	/** Crossover rate. */
 	private double crossoverRate = 0.5;
+	/** Mutation rate. */
 	private double mutationRate = 0.25; // 0 = low, 1 = high
+	
+	/** Surrogate model object. */
 	private Model model;
 
-	private Individual[] first;
-	private Individual[] last;
-
-	// public static void main(String[] args)
-	// {
-	// new NSGA2_E().go();
-	// }
-
+	/**
+	 * Constructor object for the NSGA.
+	 */
 	public NSGA2_E()
 	{
 		ff = new WindowShadingFitnessFunction(false, false);
 		r = new Random();
 	}
 
+	/**
+	 * Method to start the optimization algorithm.
+	 */
 	public void go()
 	{
-		System.out.println("started");
+		System.out.println("started NSGA-II");
 
 		VisualisePopulation vp = new VisualisePopulation();
+		
 		// 1 - initialize random population
-
 		Individual[] initial = new Individual[numSolutions];
 		for (int i = 0; i < initial.length; i++)
 		{
-			initial[i] = new Individual(ff, windowsCount, r);
+			initial[i] = new Individual(windowsCount, r);
 		}
-
-		evaluatePopulation(initial);
-		// ** NON-DOMINATED SORT **
+		evaluatePopulation(initial, false);
 		initial = ascendList(nonDominatedSort(initial));
-		// ** LOOP **
+		
+		// 2 - offspring
 		Individual[] offspring = createOffspring(initial);
-		evaluatePopulation(offspring);
+		evaluatePopulation(offspring, false);
 
 		// System.out.println("TEST OFFSPRING " + offspring[0].getFitness1() + "
 		// " + offspring[0].getFitness2());
 
-		for (Individual i : initial)
-		{
-			System.out.println(i.getFitness1() + " " + i.getFitness2());
-		}
+		// for (Individual i : initial)
+		// {
+		// System.out.println(i.getFitness1() + " " + i.getFitness2());
+		// }
 
-		double f = Plotting.hypervolume(initial);
+		double firstPopulationHypervolume = Plotting.hypervolume(initial);
 
 		int currentEval = 0;
 		while (currentEval < maxEvals)
@@ -115,10 +127,7 @@ public class NSGA2_E
 			while (pointer + nextFront.size() <= initial.length)
 			{
 				for (int i = 0; i < nextFront.size(); i++)
-				{
-					initial[pointer] = nextFront.get(i);
-					pointer++;
-				}
+					initial[pointer++] = nextFront.get(i);
 				nextFront = fronts.remove(0);
 			}
 
@@ -139,7 +148,7 @@ public class NSGA2_E
 			}
 
 			offspring = createOffspring(initial);
-			evaluatePopulation(offspring);
+			evaluatePopulation(offspring, false);
 
 			currentEval++;
 			// System.out.println("eval: " + currentEval);
@@ -154,27 +163,49 @@ public class NSGA2_E
 			System.out.println(i.getFitness1() + " " + i.getFitness2());
 		}
 
-		double l = Plotting.hypervolume(initial);
-		System.out.println("First: " + f);
-		System.out.println("Last:  " + l);
-		System.out.println("Improvement: " + (l - f));
+		double lastPopulationHypervolume = Plotting.hypervolume(initial);
+		
+		// TODO : boxplot
+//		Individual[] B = new Individual[initial.length];
+//		for (int i = 0; i < B.length; i++)
+//			B[i] = new Individual(ff, initial[i].getAlleles());
+		
+		System.out.println("First: " + firstPopulationHypervolume);
+		System.out.println("Last:  " + lastPopulationHypervolume);
+		System.out.println("Improvement: " + (lastPopulationHypervolume - firstPopulationHypervolume));
 	}
 
-	private void evaluatePopulation(Individual[] P)
+	/**
+	 * This method evaluates the passed array of Individuals.
+	 * Uses Threads to evaluate a population faster.
+	 * 
+	 * @param P The population to evaluate.
+	 * @param energyplus a boolean value that determines if the evaluator need to use EnergyPlus.
+	 */
+	private void evaluatePopulation(Individual[] P, boolean energyplus)
 	{
 		EvaluationThread[] evals = new EvaluationThread[numThreads];
 		int numberPerThreads = numSolutions / numThreads;
 
-		for (int i = 0; i < numThreads; i++)
-		{
-			evals[i] = new EvaluationThread(P, numberPerThreads * i,
-					((i < numThreads - 1)
-							? (numberPerThreads * (i + 1))
-							: P.length));
-			evals[i].start();
-		}
+		if (!energyplus)
+			for (int i = 0; i < numThreads; i++)
+			{
+				evals[i] = new EvaluationThread(P, numberPerThreads * i,
+						((i < numThreads - 1)
+								? (numberPerThreads * (i + 1))
+								: P.length));
+				evals[i].start();
+			}
+		else
+			for (int i = 0; i < numThreads; i++)
+			{
+				evals[i] = new EvaluationThread(P, numberPerThreads * i,
+						((i < numThreads - 1)
+								? (numberPerThreads * (i + 1))
+								: P.length), true);
+				evals[i].start();
+			}
 
-		int evalNum = 0;
 		for (int i = 0; i < numThreads; i++)
 		{
 			try
@@ -183,16 +214,19 @@ public class NSGA2_E
 			}
 			catch (InterruptedException e)
 			{
-				// TODO: handle exception
 				if (evals[i].isAlive())
 					i--;
 			}
-
-			if (!evals[i].isAlive())
-				evalNum += evals[i].consumed;
 		}
 	}
 
+	/**
+	 * This method turns the passed front into an array of Individuals.
+	 * 
+	 * @param fronts The front of individuals.
+	 * 
+	 * @return An array of Individual objects.
+	 */
 	private Individual[] ascendList(List<List<Individual>> fronts)
 	{
 		List<Individual> P = new ArrayList<>();
@@ -200,60 +234,61 @@ public class NSGA2_E
 		for (List<Individual> front : fronts)
 			for (Individual i : front)
 				P.add(i);
-		// System.out.println("P.size() " + P.size());
+
 		return P.toArray(new Individual[P.size()]);
 	}
 
+	/**
+	 * This method sorts Individuals in order of their domination rank over each other using the non-dominated sort.
+	 * Individuals non dominated by others will be attributed the rank 0, the next ones rank 1, etc.
+	 * 
+	 * @param pop The population to sort.
+	 * @return A list of list of fronts.
+	 */
 	private List<List<Individual>> nonDominatedSort(Individual[] pop)
 	{
-		// init
+		// Initialize
 		Set<Individual> assigned = new HashSet<Individual>(pop.length);
-		// keep track of what's been already assigned to a front
+		
+		// Keep track of what's been already assigned to a front
 		List<List<Individual>> fronts = new ArrayList<List<Individual>>();
 		fronts.add(new ArrayList<Individual>());// init first front
 
 		// ====== block A =========
 		// loop over all individuals in population and fill dom counts / sets
-		for (int p = 0; p < pop.length; p++)
+		for (int _this = 0; _this < pop.length; _this++)
 		{
-			pop[p].dominationCount = 0;
-			pop[p].dominatedSet = new HashSet<Individual>();
+			pop[_this].dominationCount = 0;
+			pop[_this].dominatedSet = new HashSet<Individual>();
 
-			for (int q = 0; q < pop.length; q++)
+			for (int _that = 0; _that < pop.length; _that++)
 			{
-				if (p != q)
+				if (_this != _that)
 				{ // don't compare with self
-					if (pop[p].dominates(pop[q]))
-					{ // if p dominates q
-						pop[p].dominatedSet.add(pop[q]); // add q to the set of
-															// solutions
-															// dominated by p
-					} else if (pop[q].dominates(pop[p]))
+					if (pop[_this].dominates(pop[_that]))
+					{ // if _this dominates _that
+						pop[_this].dominatedSet.add(pop[_that]); // add _that to the set of solutions dominated by _this
+					} 
+					else if (pop[_that].dominates(pop[_this]))
 					{
-						pop[p].dominationCount++; // increment the domination
-													// counter of p
+						pop[_this].dominationCount++; // increment the domination counter of _this
 					}
 				}
 			}
 
-			if (pop[p].dominationCount == 0)
-			{ // p belongs to the first front
-				pop[p].rank = 0; // we're going with base 0 not 1
-				fronts.get(0).add(pop[p]);
-				assigned.add(pop[p]);
+			if (pop[_this].dominationCount == 0)
+			{ // _this belongs to the first front
+				pop[_this].rank = 0; 
+				fronts.get(0).add(pop[_this]);
+				assigned.add(pop[_this]);
 			}
 		}
 
 		// =========== block B ==========
-		int i = 0; // initialise the front counter; using base 0 not 1
-
-		for (List<Individual> fi = fronts.get(i); fi.size() > 0; fi = fronts
-				.get(i))
-		{ // essentially while Fi != 0, but with inits
-			List<Individual> Q = new ArrayList<Individual>(); // Used to store
-																// members of
-																// the next
-																// front
+		int frontCounter = 0; // initialise the front counter; using base 0 not 1
+		for (List<Individual> fi = fronts.get(frontCounter); fi.size() > 0; fi = fronts.get(frontCounter))
+		{ 
+			List<Individual> Q = new ArrayList<Individual>(); // Used to store members of the next front
 			for (Individual p : fi)
 			{
 				for (Individual q : p.dominatedSet)
@@ -261,89 +296,23 @@ public class NSGA2_E
 					q.dominationCount--;
 					if (q.dominationCount == 0)
 					{
-						q.rank = i + 1;
+						q.rank = frontCounter + 1;
 						Q.add(q);
 					}
 				}
 			}
-			i++;
-			fronts.add(i, Q);
+			frontCounter++;
+			fronts.add(frontCounter, Q);
 		}
 
-		// System.out.println("hey " + fronts.size() + " " +
-		// fronts.get(0).size());
 		return fronts;
-		// System.out.println("front " + P.length);
-		// // We create a set to keep track of individuals already assigned
-		// Set<Individual> alreadyAssigned = new HashSet<>();
-		// // List to keep track of the different fronts and their solutions
-		// List<List<Individual>> fronts = new ArrayList<>();
-		//
-		// // Initialize the front "0" of best solutions.
-		// fronts.add(new ArrayList<>());
-		//
-		// for (int p = 0; p < P.length; p++)
-		// {
-		// P[p].dominationCount = 0;
-		// P[p].dominatedSet = new HashSet<>();
-		//
-		// for (int q = 0; q < P.length; q++)
-		// {
-		// if (p != q)
-		// {
-		// if (P[p].dominates(P[q]))
-		// {
-		// P[p].dominatedSet.add(P[q]);
-		// }
-		// else if (P[q].dominates(P[p]))
-		// {
-		// P[p].dominationCount += 1;
-		// }
-		// }
-		//
-		// if (P[p].dominationCount == 0)
-		// {
-		// // the solution is not dominated by any other
-		// // it belongs to the best rank
-		// P[p].rank = 0;
-		// alreadyAssigned.add(P[p]);
-		// fronts.get(0).add(P[p]);
-		// }
-		// }
-		// }
-		//
-		// System.out.println("front 2 " + P.length);
-		//
-		// // Assign rest of fronts
-		// int i = 0;
-		// for (List<Individual> fi = fronts.get(i); fi.size() > 0; fi =
-		// fronts.get(i))
-		// {
-		// List<Individual> Q = new ArrayList<>();
-		//
-		// for (Individual p : fi)
-		// {
-		// for (Individual q : p.dominatedSet)
-		// {
-		// q.dominationCount--;
-		//
-		// if (q.dominationCount == 0)
-		// {
-		// q.rank = i + 1;
-		// Q.add(q);
-		// }
-		// }
-		// }
-		//
-		// i++;
-		// fronts.add(i, Q);
-		// }
-		//
-		// System.out.println("hey " + fronts.size() + " " +
-		// fronts.get(0).size());
-		// return fronts;
 	}
 
+	/**
+	 * This method calculates the crowding distance for the List of fronts.
+	 * 
+	 * @param individuals The front to calculate the distance.
+	 */
 	private void crowdingDistance(List<Individual> individuals)
 	{
 		Individual[] I = individuals
@@ -382,6 +351,12 @@ public class NSGA2_E
 
 	}
 
+	/**
+	 * Creates an offspring population from the passed population.
+	 * 
+	 * @param parents The parent population to create the offspring population from.
+	 * @return The offspring population.
+	 */
 	private Individual[] createOffspring(Individual[] parents)
 	{
 		Individual[] nextPopulation = new Individual[parents.length];
@@ -409,6 +384,12 @@ public class NSGA2_E
 		return nextPopulation;
 	}
 
+	/**
+	 * Selects the parents for creating the offspring individual based on the selection rate.
+	 * 
+	 * @param P The parent population.
+	 * @return A random individual from the population.
+	 */
 	private Individual parentSelection(Individual[] P)
 	{
 		int i = r.nextInt(P.length), j = r.nextInt(P.length);
@@ -434,6 +415,13 @@ public class NSGA2_E
 		}
 	}
 
+	/**
+	 * Picks which allele is carried over from the parent based on the crossover rate.
+	 * 
+	 * @param parent1 The first parent.
+	 * @param parent2 The second parent.
+	 * @return The offspring population.
+	 */
 	private Individual[] crossover(Individual parent1, Individual parent2)
 	{
 		boolean[] alleles1 = parent1.getAlleles();
@@ -459,12 +447,18 @@ public class NSGA2_E
 		}
 
 		Individual[] generatedOffspring = new Individual[2];
-		generatedOffspring[0] = new Individual(ff, next1);
-		generatedOffspring[1] = new Individual(ff, next2);
+		generatedOffspring[0] = new Individual(next1);
+		generatedOffspring[1] = new Individual(next2);
 
 		return generatedOffspring;
 	}
 
+	/**
+	 * Mutates the individual based on the mutation rate.
+	 * 
+	 * @param offspring The offspring individual.
+	 * @return The possibly mutated offspring individual.
+	 */
 	private Individual mutateOffspring(Individual offspring)
 	{
 		boolean[] alleles = offspring.getAlleles();
@@ -479,41 +473,77 @@ public class NSGA2_E
 				mutated[i] = alleles[i];
 		}
 
-		return new Individual(ff, mutated);
+		return new Individual(mutated);
 	}
 
+	/**
+	 * EvaluationThread class that will evaluate a population.
+	 * 
+	 * @author Ernest Vanmosuinck
+	 */
 	class EvaluationThread extends Thread
 	{
+		/** The population to evaluate. */
 		private Individual[] individuals;
-
+		/** The index in the array to start evaluating from. */
 		private int startIndex;
-
+		/** The index in the array to start evaluating. */
 		private int endIndex;
+		/** Whether or not the evaluation has to use EnergyPlus. */
+		private boolean energyplus;
 
-		private int consumed;
-
-		public EvaluationThread(Individual[] individuals, int startIndex,
-				int endIndex)
+		/**
+		 * Constructor for the EvaluationThread object. 
+		 * Uses the surrogate model to evaluate fitness.
+		 * 
+		 * @param individuals The population to evaluate.
+		 * @param startIndex The index to start evaluating from.
+		 * @param endIndex The index to stop evaluating from.
+		 */
+		public EvaluationThread(Individual[] individuals, int startIndex, int endIndex)
 		{
 			this.individuals = individuals;
 			this.startIndex = startIndex;
 			this.endIndex = endIndex;
-			this.consumed = 0;
+			this.energyplus = false;
+		}
+		
+		/**
+		 * Constructor for the EvaluationThread object. 
+		 * Uses EnergyPlus to evaluate fitness.
+		 * 
+		 * @param individuals The population to evaluate.
+		 * @param startIndex The index to start evaluating from.
+		 * @param endIndex The index to stop evaluating from.
+		 */
+		public EvaluationThread(Individual[] individuals, int startIndex, int endIndex, boolean energyplus)
+		{
+			this.individuals = individuals;
+			this.startIndex = startIndex;
+			this.endIndex = endIndex;
+			this.energyplus = true;
 		}
 
 		public void run()
 		{
-			consumed = 0;
 			for (int j = startIndex; j < endIndex; j++)
 			{
 				Individual i = individuals[j];
-				i.evaluate_bis(model); // TODO
+				if (!energyplus)
+					i.surrogateEvaluate(model); // TODO
+				else
+					i.energyPlusEvaluate();
 				// System.out.println("SINGLE INDIVIDUAL : " + i.getFitness1() +
 				// " " + i.getFitness2());
 			}
 		}
 	}
 
+	/**
+	 * Mutator method for the surrogate model object.
+	 * 
+	 * @param m The surrogate model.
+	 */
 	public void setModel(Model m)
 	{
 		this.model = m;

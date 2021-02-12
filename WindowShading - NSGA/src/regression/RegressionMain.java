@@ -17,7 +17,7 @@ public class RegressionMain
 //		System.out.println(set.length);
 		
 		Model model = new Model(set);
-		model.build();
+		model.go();
 		
 		System.out.println("** MLP **");
 		System.out.println(model.getEvaluation().toSummaryString());

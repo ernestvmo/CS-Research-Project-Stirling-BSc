@@ -7,35 +7,49 @@ import weka.classifiers.Evaluation;
 import weka.classifiers.functions.MultilayerPerceptron;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
-import weka.core.Instance;
 import weka.core.Instances;
 
 public class Model
 {
-	private Evaluation e;
+	/** The data set used to train the model. */
 	private double[][] set;
-	
+	/** The Artificial Neural Network (model) object. */
 	private MultilayerPerceptron mlp;
+	/** The instances build from the data set. */
 	private Instances trainingSet;
+	/** Evaluation object of the trained model. */
+	private Evaluation evaluation;
 	
+	/**
+	 * Constructor for the Model object.
+	 * 
+	 * @param set The dataset of pre-evaluated solutions.
+	 */
 	public Model(double[][] set)
 	{
 		this.set = set;
 	}
 	
-	public void build()
+	/**
+	 * Trains the model.
+	 */
+	public void go()
 	{
 		ArrayList<Attribute> attributes = createModelAttributes();
 		
 		trainingSet = createSet(attributes, set);
 		
 		// TODO delete - temporary
-		double[][] temp = getTen(set);
-		Instances testSet = createSet(attributes, temp);
-		
-		classify(trainingSet, testSet);
+//		double[][] temp = getTen(set);
+//		Instances testSet = createSet(attributes, temp);
+		build(trainingSet, null);
 	}
 	
+	/**
+	 * Create the model's attribute list.
+	 * 
+	 * @return The attributes' list.
+	 */
 	private ArrayList<Attribute> createModelAttributes()
 	{
 		ArrayList<Attribute> attributes = new ArrayList<>();
@@ -50,6 +64,13 @@ public class Model
 		return attributes;
 	}
 	
+	/**
+	 * Create an Instances object from the attributes' list and the data set.
+	 * 
+	 * @param attributes The model's attributes' list.
+	 * @param solutionSet The data set of pre-evaluated solutions. 
+	 * @return An Instances object of the data.
+	 */
 	private Instances createSet(ArrayList<Attribute> attributes, double[][] solutionSet)
 	{
 		Instances instances = new Instances("Training Set", attributes, solutionSet.length);
@@ -63,6 +84,12 @@ public class Model
 		return instances;
 	}
 	
+	/**
+	 * Randomly gets 10 solutions from the data set.
+	 * 
+	 * @param set The data set to pick solutions from.
+	 * @return A 2D array of solutions.
+	 */
 	private double[][] getTen(double[][] set)
 	{
 		Random r = new Random();
@@ -77,15 +104,24 @@ public class Model
 		return newSet;
 	}
 	
-	private void classify(Instances trainingSet, Instances testSet)
+	/**
+	 * Build the model using the training set.
+	 * 
+	 * @param trainingSet Instances object containing the data set.
+	 * @param testSet Solutions to classify to evaluate the model.
+	 */
+	private void build(Instances trainingSet, Instances testSet)
 	{
 		try
 		{
 			mlp = new MultilayerPerceptron();
 			mlp.buildClassifier(trainingSet);
 			
-			e = new Evaluation(trainingSet);
-			e.evaluateModel(mlp, testSet);
+			if (testSet != null)
+			{
+				evaluation = new Evaluation(trainingSet);
+				evaluation.evaluateModel(mlp, testSet);
+			}
 		}
 		catch (Exception e)
 		{
@@ -93,6 +129,12 @@ public class Model
 		}
 	}
 
+	/**
+	 * Predict the energy consumption of the passed in boolean array.
+	 * 
+	 * @param alleles An array of booleans representing the windows of a layout.
+	 * @return The predicted energy consumption.
+	 */
 	public double predict(boolean[] alleles) 
 	{
 		double[] temp = new double[alleles.length + 1];
@@ -118,8 +160,12 @@ public class Model
 		return prediction;
 	}
 	
+	/**
+	 * Accessor method for the Evaolution object.
+	 * @return The Evalution object.
+	 */
 	public Evaluation getEvaluation()
 	{
-		return e;
+		return evaluation;
 	}
 }
