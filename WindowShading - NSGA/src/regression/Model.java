@@ -148,7 +148,7 @@ public class Model
 		
 		double prediction = 0;
 		
-		while (prediction < 1 || Double.isNaN(prediction)) {
+		while (prediction < 10000 /*min val*/ || Double.isNaN(prediction)) {
 			try {
 				prediction = mlp.classifyInstance(instances.instance(0));
 			} 

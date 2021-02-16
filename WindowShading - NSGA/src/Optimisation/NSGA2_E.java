@@ -8,6 +8,7 @@ import java.util.Random;
 import java.util.Set;
 
 import WindowShading.WindowShadingFitnessFunction;
+import plotting.PredictedPlotting;
 import plotting.Plotting;
 import regression.Model;
 
@@ -166,13 +167,36 @@ public class NSGA2_E
 		double lastPopulationHypervolume = Plotting.hypervolume(initial);
 		
 		// TODO : boxplot
-//		Individual[] B = new Individual[initial.length];
-//		for (int i = 0; i < B.length; i++)
-//			B[i] = new Individual(ff, initial[i].getAlleles());
+
 		
 		System.out.println("First: " + firstPopulationHypervolume);
 		System.out.println("Last:  " + lastPopulationHypervolume);
 		System.out.println("Improvement: " + (lastPopulationHypervolume - firstPopulationHypervolume));
+		
+		// Boxplot
+		if (true) {
+			boxplot(initial);
+		}
+	}
+
+	private void boxplot(Individual[] initial) {
+		Individual[] B = new Individual[initial.length];
+		for (int i = 0; i < B.length; i++)
+			B[i] = new Individual(ff, initial[i].getAlleles());
+		evaluatePopulation(B, true);
+		double[] calculatedEnergy = new double[initial.length];
+		double[] predictedEnergy = new double[initial.length];
+		for (int i = 0; i < initial.length; i++) {
+			calculatedEnergy[i] = B[i].getFitness1();
+			predictedEnergy[i] = initial[i].getFitness1(); 
+		}
+
+		for (double val : predictedEnergy)
+			System.out.println(val);
+		for (double val : calculatedEnergy)
+			System.out.println(val);
+		
+		new PredictedPlotting(calculatedEnergy, predictedEnergy);
 	}
 
 	/**
@@ -180,7 +204,7 @@ public class NSGA2_E
 	 * Uses Threads to evaluate a population faster.
 	 * 
 	 * @param P The population to evaluate.
-	 * @param energyplus a boolean value that determines if the evaluator need to use EnergyPlus.
+	 * @param energyplus a boolean value that determines if the evaluator need to use EnergyPlus. {@code true} if the evaluator uses EnergyPlus, {@code false} otherwise.
 	 */
 	private void evaluatePopulation(Individual[] P, boolean energyplus)
 	{
