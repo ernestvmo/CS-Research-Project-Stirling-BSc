@@ -63,10 +63,12 @@ public class NSGA2_E
 		
 		// 1 - initialize random population
 		Individual[] initial = new Individual[numSolutions];
-		for (int i = 0; i < initial.length; i++)
+		initial[0] = new Individual(new boolean[windowsCount]);
+		for (int i = 1; i < initial.length; i++)
 		{
 			initial[i] = new Individual(windowsCount, r);
 		}
+		
 		evaluatePopulation(initial, false);
 		initial = ascendList(nonDominatedSort(initial));
 		
