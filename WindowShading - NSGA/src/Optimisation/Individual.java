@@ -126,18 +126,16 @@ public class Individual
 	 * call the evaluator and evaluate - regardless of whether or not it's
 	 * already been done.
 	 */
-	public void energyPlusEvaluate()
+	public void energyPlusEvaluate(FitnessFunction ff)
 	{
-//		FitnessFunction.MOFitness f = ff.evaluate(this);
-//		this.fitness1 = f.fitness1;
+		FitnessFunction.MOFitness f = ff.evaluate(this);
+		this.fitness1 = f.fitness1;
 //		this.fitness2 = f.fitness2;
 //		this.overallConstraintViolation = f.overallConstraintViolation;
 		
 		int count = 0;
 		for (int i = 0; i < alleles.length; i++)
 			count += alleles[i] ? 1 : 0;
-
-		this.fitness1 = 100 * (400 - count) + 375 * count;
 		this.fitness2 = 100 * (120 - count) + 350 * count;
 	}
 
@@ -264,7 +262,7 @@ public class Individual
 			else
 				buff.append("0");
 		}
-		buff.append(" : " + fitness1 + ", " + fitness2);
+		buff.append(" : " + fitness1 + ", " + fitness2 + ", " + rank);
 		
 		return buff.toString();
 	}

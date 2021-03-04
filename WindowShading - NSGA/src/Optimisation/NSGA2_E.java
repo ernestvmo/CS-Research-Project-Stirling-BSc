@@ -1,5 +1,6 @@
 package Optimisation;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -8,7 +9,9 @@ import java.util.Random;
 import java.util.Set;
 
 import WindowShading.WindowShadingFitnessFunction;
+import main.Loader;
 import plotting.PredictedPlotting;
+import plotting.FacadeUI;
 import plotting.Plotting;
 import regression.Model;
 
@@ -48,7 +51,7 @@ public class NSGA2_E
 	 */
 	public NSGA2_E()
 	{
-		ff = new WindowShadingFitnessFunction(false, false);
+		ff = new WindowShadingFitnessFunction(false, true);
 		r = new Random();
 	}
 
@@ -100,28 +103,6 @@ public class NSGA2_E
 				R[p++] = offspring[i];
 			}
 
-			// for (Individual t : R) {
-			// System.out.println("INDIVS IN R : " + t.getFitness1() + " " +
-			// t.getFitness2() + " " + t.toString());
-			// }
-
-			// System.out.println(R.length);
-
-			int counter = 0;
-			// for (Individual i : R)
-			// {System.out.print(counter++ + " ");
-			// for (boolean c : i.getAlleles())
-			// {
-			// System.out.print(c ? "1" : "0");
-			// }
-			// System.out.println(" " + i.getFitness1() + " " +
-			// i.getFitness2());
-			// }
-
-			// System.out.println("TESTTESTTES R " +
-			// R[initial.length].getFitness1() + " " +
-			// R[initial.length].getFitness2());
-
 			List<List<Individual>> fronts = nonDominatedSort(R);
 
 			initial = new Individual[numSolutions];
@@ -153,6 +134,32 @@ public class NSGA2_E
 			offspring = createOffspring(initial);
 			evaluatePopulation(offspring, false);
 
+
+//			if (currentEval % 1000 == 0 && !(currentEval == maxEvals))
+			if (currentEval % 100 == 0 && currentEval != 5000)
+			{
+				model.go();
+			}
+				
+//			if (currentEval == (maxEvals / 2))
+//			{
+//				System.out.println("MID-PROCESS EVALUATION");
+//				evaluatePopulation(initial, true);
+//				
+//				double[][] population = new double[initial.length][initial[0].getAlleles().length + 1];
+//				System.out.println(population.length + " " + population[0].length);
+//				for (int i = 0; i < population.length; i++)
+//				{
+//					for (int j = 0; j < initial[i].getAlleles().length; j++)
+//					{
+//						population[i][j] = initial[i].getAlleles()[j] ? 1 : 0;
+//					}
+//					population[i][initial.length] = initial[i].getFitness1();
+//				}
+//				
+//				model.retrain(population);
+//			}
+			
 			currentEval++;
 			// System.out.println("eval: " + currentEval);
 		}
@@ -161,26 +168,65 @@ public class NSGA2_E
 		vp.updatePopulation(initial);
 		// displayPopulation(initial);
 
-		for (Individual i : initial)
-		{
-			System.out.println(i.getFitness1() + " " + i.getFitness2());
-		}
+//		for (Individual i : initial)
+//		{
+//			System.out.println(i.getFitness1() + " " + i.getFitness2());
+//		}
 
 		double lastPopulationHypervolume = Plotting.hypervolume(initial);
 		
 		// TODO : boxplot
-
 		
 		System.out.println("First: " + firstPopulationHypervolume);
 		System.out.println("Last:  " + lastPopulationHypervolume);
 		System.out.println("Improvement: " + (lastPopulationHypervolume - firstPopulationHypervolume));
 		
+		for (Individual i : initial)
+			if (i.rank == 0)
+				new FacadeUI(i);
+		
+		double mae = calculateMAE(initial);
+		
+		
+		
+		System.out.println("MAE " + mae);
+		
+//		System.out.println("Surrogate");
+//		for (Individual i : surrogate)
+//			System.out.println(i.toString());
+//		evaluatePopulation(initial, true);
+//		System.out.println("EnergyPlus");
+//		for (Individual i : initial)
+//			System.out.println(i.toString());
+
+		
 		// Boxplot
-		if (true) {
-			boxplot(initial);
-		}
+//		if (true) {
+//			boxplot(initial);
+//		}
 	}
 
+	private double calculateMAE(Individual[] initial)
+	{
+		double[] diff1 = new double[initial.length];
+		for (int i = 0; i < initial.length; i++)
+			diff1[i] = initial[i].getFitness1();
+		
+		evaluatePopulation(initial, true);
+
+		double[] diff2 = new double[initial.length];
+		for (int i = 0; i < initial.length; i++)
+			diff2[i] = initial[i].getFitness1();
+		
+		double mae = 0;
+		for (int i = 0; i < initial.length; i++)
+			mae += (diff2[i] - diff1[i]);
+		
+		mae /= initial.length;
+		
+		return mae;
+	}
+	
 	private void boxplot(Individual[] initial) {
 		Individual[] B = new Individual[initial.length];
 		for (int i = 0; i < B.length; i++)
@@ -558,7 +604,7 @@ public class NSGA2_E
 				if (!energyplus)
 					i.surrogateEvaluate(model); // TODO
 				else
-					i.energyPlusEvaluate();
+					i.energyPlusEvaluate(ff);
 				// System.out.println("SINGLE INDIVIDUAL : " + i.getFitness1() +
 				// " " + i.getFitness2());
 			}

@@ -22,7 +22,7 @@ public class WindowShadingFitnessFunction extends FitnessFunction
 		WindowShadingFitnessFunction ff = new WindowShadingFitnessFunction(
 				false, true);
 
-		boolean[] noWindows = new boolean[ff.getProblemSize()];
+		boolean[] noWindows = new boolean[120];
 		boolean[] allWindows = new boolean[ff.getProblemSize()];
 		boolean[] rndWindows = new boolean[ff.getProblemSize()];
 		
@@ -41,14 +41,14 @@ public class WindowShadingFitnessFunction extends FitnessFunction
 		ff.evaluate(iNo);
 		System.out.println("No windows: " + iNo.getFitness1() + ", " + iNo.getFitness2());
 
-		Individual iAll = new Individual(ff, allWindows);
-		ff.evaluate(iAll);
-		System.out.println("All windows: " + iAll.getFitness1() + ", "
-				+ iAll.getFitness2());
-		
-		Individual iRnd = new Individual(ff, rndWindows);
-		ff.evaluate(iRnd);
-		System.out.println("Random windows: " + iRnd.getFitness1() + ", " + iRnd.getFitness2() + " with " + count + " windows.");
+//		Individual iAll = new Individual(ff, allWindows);
+//		ff.evaluate(iAll);
+//		System.out.println("All windows: " + iAll.getFitness1() + ", "
+//				+ iAll.getFitness2());
+//		
+//		Individual iRnd = new Individual(ff, rndWindows);
+//		ff.evaluate(iRnd);
+//		System.out.println("Random windows: " + iRnd.getFitness1() + ", " + iRnd.getFitness2() + " with " + count + " windows.");
 	}
 
 	public WindowShadingFitnessFunction(boolean constrained, boolean fullYear)

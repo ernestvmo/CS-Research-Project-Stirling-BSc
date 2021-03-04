@@ -104,6 +104,31 @@ public class Model
 		return newSet;
 	}
 	
+	public void retrain(double[][] alleles)
+	{
+		addToInstances(alleles);
+		
+		build(trainingSet, null);
+		
+		try {
+			Evaluation evaluation = new Evaluation(trainingSet);
+			evaluation.evaluateModel(mlp, createSet(createModelAttributes(), getTen(alleles)));
+			evaluation.toSummaryString();
+		}
+		catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
+	private void addToInstances(double[][] set)
+	{
+		for (int i = 0; i < set.length; i++)
+		{
+			trainingSet.add(new DenseInstance(1.0, set[i]));
+		}
+	}
+	
 	/**
 	 * Build the model using the training set.
 	 * 
@@ -152,7 +177,13 @@ public class Model
 			try {
 				prediction = mlp.classifyInstance(instances.instance(0));
 			} 
-			catch (Exception e) {
+			catch (NullPointerException ne)
+			{
+				// System.out.println(ne.getCause());// TODO ignore this, no idea
+													// why it gets thrown
+			}
+			catch (Exception e)
+			{
 				System.out.println(instances.instance(0));
 				e.printStackTrace();
 			}
