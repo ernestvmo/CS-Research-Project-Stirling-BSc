@@ -40,9 +40,9 @@ public class Model
 		trainingSet = createSet(attributes, set);
 		
 		// TODO delete - temporary
-//		double[][] temp = getTen(set);
-//		Instances testSet = createSet(attributes, temp);
-		build(trainingSet, null);
+		double[][] temp = getTen(set);
+		Instances testSet = createSet(attributes, temp);
+		build(trainingSet, testSet);
 	}
 	
 	/**
@@ -198,5 +198,14 @@ public class Model
 	public Evaluation getEvaluation()
 	{
 		return evaluation;
+	}
+
+	/**
+	 * Mutator method for the data set used to build the model.
+	 * @param set
+	 */
+	public void setSet(double[][] set)
+	{
+		this.set = set;
 	}
 }

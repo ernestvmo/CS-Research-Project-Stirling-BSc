@@ -8,9 +8,12 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
+import org.apache.commons.math3.stat.correlation.SpearmansCorrelation;
+
 import WindowShading.WindowShadingFitnessFunction;
 import main.Loader;
 import plotting.PredictedPlotting;
+import plotting.Spearman;
 import plotting.FacadeUI;
 import plotting.Plotting;
 import regression.Model;
@@ -45,6 +48,8 @@ public class NSGA2_E
 	
 	/** Surrogate model object. */
 	private Model model;
+	
+	private double[][] presetData;
 
 	/**
 	 * Constructor object for the NSGA.
@@ -55,6 +60,23 @@ public class NSGA2_E
 		r = new Random();
 	}
 
+	
+	public void prebuildModel()
+	{
+		presetData = Loader.load();
+		model = new Model(presetData);
+		model.go();
+		try
+		{
+			System.out.println("Model eval: " + model.getEvaluation().correlationCoefficient());
+		}
+		catch (Exception e)
+		{
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
 	/**
 	 * Method to start the optimization algorithm.
 	 */
@@ -62,7 +84,7 @@ public class NSGA2_E
 	{
 		System.out.println("started NSGA-II");
 
-		VisualisePopulation vp = new VisualisePopulation();
+		VisualisePopulation_E vp = new VisualisePopulation_E();
 		
 		// 1 - initialize random population
 		Individual[] initial = new Individual[numSolutions];
@@ -92,6 +114,66 @@ public class NSGA2_E
 		int currentEval = 0;
 		while (currentEval < maxEvals)
 		{
+//			if (currentEval % 25 == 0 && currentEval != 100 && currentEval != 0 && true) 
+			if (currentEval % 500 == 0 && currentEval != 0) 
+			{
+				System.out.println("MID EVALUATION " + currentEval);
+				double[] surrogateFitness = new double[initial.length];
+				for (int i = 0; i < initial.length; i++)
+				{
+					surrogateFitness[i] = initial[i].getFitness1();
+//					System.out.println(initial[i].getFitness1());
+				}
+				evaluatePopulation(initial, true);
+				
+				double[] energyFitness = new double[initial.length];
+				for (int i = 0; i < initial.length; i++)
+				{
+					energyFitness[i] = initial[i].getFitness1();
+//					System.out.println(initial[i].getFitness1());
+				}
+				
+				double[][] solutionsToAdd = new double[initial.length][initial[0].getAlleles().length + 1];
+				for (int i = 0; i < initial.length; i++)
+				{
+					for (int j = 0; j < initial[i].getAlleles().length; j++)
+						solutionsToAdd[i][j] = initial[i].getAlleles()[j] ? 1 : 0;
+					solutionsToAdd[i][solutionsToAdd[i].length - 1] = initial[i].getFitness1();
+				}
+				
+				System.out.println("before : " + presetData.length + "  " + presetData[0].length);
+				
+				double[][] newTrainingData = new double[presetData.length + solutionsToAdd.length][presetData[0].length];
+				int tempPointer = 0;
+				for (int i = 0; i < presetData.length; i++)
+				{
+					newTrainingData[tempPointer++] = presetData[i];
+				}
+				
+				for (int i = 0; i < solutionsToAdd.length; i++)
+				{
+					newTrainingData[tempPointer++] = solutionsToAdd[i];
+				}
+				
+				presetData = newTrainingData;
+				
+				System.out.println("see if copy has worked : " + presetData.length + "  " + presetData[0].length);
+				
+				model.setSet(newTrainingData);
+				model.go();
+				try
+				{
+					System.out.println("Model eval: " + model.getEvaluation().correlationCoefficient());
+					
+					System.out.println(new SpearmansCorrelation().correlation(energyFitness, surrogateFitness));
+				}
+				catch (Exception e)
+				{
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+			
 			Individual[] R = new Individual[initial.length + offspring.length];
 			int p = 0;
 			for (int i = 0; i < initial.length; i++)
@@ -118,11 +200,9 @@ public class NSGA2_E
 			if (pointer < initial.length)
 			{
 				crowdingDistance(nextFront);
-				Individual[] nextFrontArray = nextFront
-						.toArray(new Individual[nextFront.size()]);
+				Individual[] nextFrontArray = nextFront.toArray(new Individual[nextFront.size()]);
 
-				Arrays.sort(nextFrontArray,
-						new Individual.CrowdingDistanceComparator());
+				Arrays.sort(nextFrontArray, new Individual.CrowdingDistanceComparator());
 
 				for (int i = 0; pointer < initial.length; i++)
 				{
@@ -134,32 +214,6 @@ public class NSGA2_E
 			offspring = createOffspring(initial);
 			evaluatePopulation(offspring, false);
 
-
-//			if (currentEval % 1000 == 0 && !(currentEval == maxEvals))
-			if (currentEval % 100 == 0 && currentEval != 5000)
-			{
-				model.go();
-			}
-				
-//			if (currentEval == (maxEvals / 2))
-//			{
-//				System.out.println("MID-PROCESS EVALUATION");
-//				evaluatePopulation(initial, true);
-//				
-//				double[][] population = new double[initial.length][initial[0].getAlleles().length + 1];
-//				System.out.println(population.length + " " + population[0].length);
-//				for (int i = 0; i < population.length; i++)
-//				{
-//					for (int j = 0; j < initial[i].getAlleles().length; j++)
-//					{
-//						population[i][j] = initial[i].getAlleles()[j] ? 1 : 0;
-//					}
-//					population[i][initial.length] = initial[i].getFitness1();
-//				}
-//				
-//				model.retrain(population);
-//			}
-			
 			currentEval++;
 			// System.out.println("eval: " + currentEval);
 		}
@@ -185,11 +239,10 @@ public class NSGA2_E
 			if (i.rank == 0)
 				new FacadeUI(i);
 		
-		double mae = calculateMAE(initial);
+		calculateCorrelations(initial);
 		
 		
 		
-		System.out.println("MAE " + mae);
 		
 //		System.out.println("Surrogate");
 //		for (Individual i : surrogate)
@@ -206,26 +259,50 @@ public class NSGA2_E
 //		}
 	}
 
-	private double calculateMAE(Individual[] initial)
+	private void calculateCorrelations(Individual[] initial)
 	{
-		double[] diff1 = new double[initial.length];
+		double[] surrogateFitness = new double[initial.length];
 		for (int i = 0; i < initial.length; i++)
-			diff1[i] = initial[i].getFitness1();
+		{
+			surrogateFitness[i] = initial[i].getFitness1();
+//			System.out.println(initial[i].getFitness1());
+		}
 		
 		evaluatePopulation(initial, true);
 
-		double[] diff2 = new double[initial.length];
+		double[] energyFitness = new double[initial.length];
 		for (int i = 0; i < initial.length; i++)
-			diff2[i] = initial[i].getFitness1();
+		{
+			energyFitness[i] = initial[i].getFitness1();
+//			System.out.println(initial[i].getFitness1());
+		}
+			
+		// DIFFERENTE CORRELATIONS SECTIONS
 		
+		System.out.println("MAE : " + calculateMAE(energyFitness, surrogateFitness));
+		System.out.println("SPEARMAN : " + calculateSpearmanCorrel(energyFitness, surrogateFitness));
+	}
+	
+	
+	private double calculateMAE(double[] energyF, double[] surrogateF)
+	{
 		double mae = 0;
-		for (int i = 0; i < initial.length; i++)
-			mae += (diff2[i] - diff1[i]);
+		for (int i = 0; i < energyF.length; i++)
+			mae += (energyF[i] - surrogateF[i]);
 		
-		mae /= initial.length;
+		mae /= energyF.length;
 		
 		return mae;
 	}
+	
+	private double calculateSpearmanCorrel(double[] energyF, double[] surrogateF)
+	{
+//		Spearman spearman = new Spearman(energyF, surrogateF);
+//		return spearman.calculateCorrelation();
+		
+		Spearman spearman = new Spearman(energyF, surrogateF);
+		return spearman.calcCorrel();
+ 	}
 	
 	private void boxplot(Individual[] initial) {
 		Individual[] B = new Individual[initial.length];
@@ -616,10 +693,10 @@ public class NSGA2_E
 	 * 
 	 * @param m The surrogate model.
 	 */
-	public void setModel(Model m)
-	{
-		this.model = m;
-	}
+//	public void setModel(Model m)
+//	{
+//		this.model = m;
+//	}
 
 	private void displayPopulation(Individual[] P)
 	{

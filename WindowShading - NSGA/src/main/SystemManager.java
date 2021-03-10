@@ -17,27 +17,34 @@ public class SystemManager
 	public static void main(String[] args)
 	{
 		SystemManager sm = new SystemManager();
-		sm.trainModel();
+//		sm.trainModel();
 		sm.go();
 	}
 	
 	/** 
 	 * Constructor object for the SystemManager. 
 	 */
-	public SystemManager()
+	public SystemManager(double d)
 	{
 		model = new Model(Loader.load());
 		nsga = new NSGA2_E();
 	}
 	
+	public SystemManager()
+	{
+		nsga = new NSGA2_E();
+		nsga.prebuildModel();
+		
+	}
+	
 	/** 
 	 * This method will build the surrogate model and assign it to the GA. 
 	 */
-	public void trainModel()
-	{
-		model.go();
-		nsga.setModel(model);
-	}
+//	public void trainModel()
+//	{
+//		model.go();
+//		nsga.setModel(model);
+//	}
 	
 	/**
 	 * This method starts the GA.

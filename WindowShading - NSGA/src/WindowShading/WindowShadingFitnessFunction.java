@@ -23,28 +23,28 @@ public class WindowShadingFitnessFunction extends FitnessFunction
 				false, true);
 
 		boolean[] noWindows = new boolean[120];
-		boolean[] allWindows = new boolean[ff.getProblemSize()];
-		boolean[] rndWindows = new boolean[ff.getProblemSize()];
+		boolean[] allWindows = new boolean[120];
+//		boolean[] rndWindows = new boolean[ff.getProblemSize()];
 		
 		java.util.Arrays.fill(allWindows, true);
 		///////////////
 		int count = 0;
-		for (int i = 0; i < rndWindows.length; i++)
-		{
-			rndWindows[i] = new Random().nextBoolean();
-			if (rndWindows[i])
-				count++;
-		}
+//		for (int i = 0; i < rndWindows.length; i++)
+//		{
+//			rndWindows[i] = new Random().nextBoolean();
+//			if (rndWindows[i])
+//				count++;
+//		}
 		///////////////
 		
 		Individual iNo = new Individual(ff, noWindows);
 		ff.evaluate(iNo);
 		System.out.println("No windows: " + iNo.getFitness1() + ", " + iNo.getFitness2());
 
-//		Individual iAll = new Individual(ff, allWindows);
-//		ff.evaluate(iAll);
-//		System.out.println("All windows: " + iAll.getFitness1() + ", "
-//				+ iAll.getFitness2());
+		Individual iAll = new Individual(ff, allWindows);
+		ff.evaluate(iAll);
+		System.out.println("All windows: " + iAll.getFitness1() + ", "
+				+ iAll.getFitness2());
 //		
 //		Individual iRnd = new Individual(ff, rndWindows);
 //		ff.evaluate(iRnd);

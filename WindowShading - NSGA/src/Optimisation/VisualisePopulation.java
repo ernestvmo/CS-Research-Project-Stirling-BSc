@@ -50,7 +50,7 @@ public class VisualisePopulation extends JFrame
 		this.minFitness2 = minFitness2;
 		this.maxFitness2 = maxFitness2;
 		this.setTitle("Visualise Population");
-		this.setSize(400, 400);
+		this.setSize(900, 650);
 		this.setVisible(true);
 		this.population = null;
 		this.setDefaultCloseOperation(EXIT_ON_CLOSE);
@@ -90,6 +90,9 @@ public class VisualisePopulation extends JFrame
 					max2 = individual.getFitness2();
 				}
 			}
+			
+			min2 = 12000;
+			max2 = 42000;
 
 			// add a bit of padding
 			double pad1 = (max1 - min1) * 0.2;
@@ -145,8 +148,8 @@ public class VisualisePopulation extends JFrame
 		// textWidth, bounds.y + textHeight + upperOffset);
 
 		// points on axes (tics)
-		int numXTics = 5;
-		int numYTics = 5;
+		int numXTics = 15;
+		int numYTics = 10;
 		int ticSize = 3;
 		// NB- after this we pretend there is an extra tic at the extremes of
 		// each of the axes, but don't show it as it'd be clipped
@@ -203,8 +206,7 @@ public class VisualisePopulation extends JFrame
 				// System.out.println("B:" + i.getFitness2() + ":" + n2);
 
 				int x = trimmedBounds.x + (int) (trimmedBounds.width * n1);
-				int y = trimmedBounds.y + trimmedBounds.height
-						- (int) (trimmedBounds.height * n2);
+				int y = trimmedBounds.y + (int) (trimmedBounds.height * n2);
 
 				g2.fillRect(x, y, 4, 4);
 			} // end of loop over population
