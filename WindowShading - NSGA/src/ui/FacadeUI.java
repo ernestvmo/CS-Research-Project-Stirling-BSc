@@ -1,4 +1,4 @@
-package plotting;
+package ui;
 
 import java.awt.EventQueue;
 
@@ -45,7 +45,7 @@ public class FacadeUI
 		frame = new JFrame();
 		frame.setTitle("Individual " + title);
 		frame.setBounds(100, 100, 300, 480);
-		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+//		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.getContentPane().setLayout(new BorderLayout(0, 0));
 		
 		JPanel panelWindows = new JPanel();

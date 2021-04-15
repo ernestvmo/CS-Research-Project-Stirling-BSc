@@ -3,21 +3,35 @@ package regression;
 import java.util.ArrayList;
 import java.util.Random;
 
+import main.Loader;
 import weka.classifiers.Evaluation;
+import weka.classifiers.bayes.NaiveBayes;
+import weka.classifiers.bayes.NaiveBayesMultinomial;
+import weka.classifiers.functions.LinearRegression;
 import weka.classifiers.functions.MultilayerPerceptron;
+import weka.classifiers.functions.SMOreg;
+import weka.classifiers.functions.SimpleLinearRegression;
+import weka.classifiers.lazy.IBk;
+import weka.classifiers.lazy.KStar;
+import weka.classifiers.misc.SerializedClassifier;
+import weka.classifiers.rules.DecisionTable;
+import weka.classifiers.rules.OneR;
+import weka.classifiers.rules.PART;
+import weka.classifiers.rules.ZeroR;
+import weka.classifiers.trees.HoeffdingTree;
+import weka.classifiers.trees.J48;
+import weka.classifiers.trees.LMT;
+import weka.classifiers.trees.M5P;
+import weka.classifiers.trees.REPTree;
 import weka.classifiers.trees.RandomTree;
+import weka.classifiers.trees.lmt.LogisticBase;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
 import weka.core.Instances;
+import weka.core.pmml.jaxbbindings.NaiveBayesModel;
 
-public class Model
+public class Classifier
 {
-	private static final double EXTRA = 1000;
-//	private static final double MINIMUM = 42710.2819751644 - EXTRA;
-	private static final double MINIMUM = 40000;
-//	private static final double MAXIMUM = 45670.29789456176 + EXTRA;
-	private static final double MAXIMUM = 50000;
-	
 	/** The data set used to train the model. */
 	private double[][] set;
 	/** The Artificial Neural Network (model) object. */
@@ -27,12 +41,27 @@ public class Model
 	/** Evaluation object of the trained model. */
 	private Evaluation evaluation;
 	
+	public static void main(String[] args)
+	{
+		Classifier c = new Classifier(Loader.load());
+		c.go();
+		try
+		{
+			System.out.println(c.getEvaluation().correlationCoefficient());
+		}
+		catch (Exception e)
+		{
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
 	/**
 	 * Constructor for the Model object.
 	 * 
 	 * @param set The dataset of pre-evaluated solutions.
 	 */
-	public Model(double[][] set)
+	public Classifier(double[][] set)
 	{
 		this.set = set;
 	}
@@ -111,52 +140,30 @@ public class Model
 		return newSet;
 	}
 	
-	/**
-	 * Retrain the model with an additional set.
-	 * 
-	 * @param addition The values to add to the training set.
-	 */
-//	public void retrain(double[][] addition)
-//	{
-//		addToInstances(addition);
-//		
-//		System.out.println(trainingSet.size());
+	public void retrain(double[][] alleles)
+	{
+		addToInstances(alleles);
 		
-//		retrain();
-//	}
-//	
-//	/**
-//	 * Retrain the model.
-//	 */
-//	public void retrain()
-//	{
-//		build(trainingSet, null);
-//
-//		try
-//		{
-//			Evaluation evaluation = new Evaluation(trainingSet);
-//			evaluation.evaluateModel(mlp, createSet(createModelAttributes(), getTen(addition)));
-//			evaluation.toSummaryString();
-//		}
-//		catch (Exception e)
-//		{
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
-//	}
+		build(trainingSet, null);
+		
+		try {
+			Evaluation evaluation = new Evaluation(trainingSet);
+			evaluation.evaluateModel(mlp, createSet(createModelAttributes(), getTen(alleles)));
+			evaluation.toSummaryString();
+		}
+		catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
 	
-	/**
-	 * Add the passed values into the training data.
-	 * 
-	 * @param addition The new values to add.
-	 */
-//	private void addToInstances(double[][] addition)
-//	{
-//		for (int i = 0; i < addition.length; i++)
-//		{
-//			trainingSet.add(new DenseInstance(1.0, addition[i]));
-//		}
-//	}
+	private void addToInstances(double[][] set)
+	{
+		for (int i = 0; i < set.length; i++)
+		{
+			trainingSet.add(new DenseInstance(1.0, set[i]));
+		}
+	}
 	
 	/**
 	 * Build the model using the training set.
@@ -202,15 +209,14 @@ public class Model
 		
 		double prediction = 0;
 		
-//		while (prediction < 10000 /*min val*/ || Double.isNaN(prediction)) {
-		while (Double.isNaN(prediction) || !(prediction >= MINIMUM && prediction <= MAXIMUM)) {
+		while (prediction < 10000 /*min val*/ || Double.isNaN(prediction)) {
 			try {
 				prediction = mlp.classifyInstance(instances.instance(0));
 			} 
 			catch (NullPointerException ne)
 			{
-				// System.out.println(ne.getCause());
-				// TODO ignore this, no idea why it gets thrown
+				// System.out.println(ne.getCause());// TODO ignore this, no idea
+													// why it gets thrown
 			}
 			catch (Exception e)
 			{

@@ -5,10 +5,6 @@
 
 package Optimisation;
 
-/**
- *
- * @author cvaeib
- */
 public abstract class FitnessFunction
 {
 	/**

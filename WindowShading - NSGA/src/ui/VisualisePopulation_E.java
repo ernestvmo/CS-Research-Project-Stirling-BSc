@@ -3,11 +3,21 @@
  * and open the template in the editor.
  */
 
-package Optimisation;
+package ui;
 
 import java.awt.*;
 import java.math.BigDecimal;
 import javax.swing.JFrame;
+import javax.swing.JPanel;
+import javax.swing.JList;
+import javax.swing.JScrollPane;
+import javax.swing.ListModel;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
+
+import Optimisation.Individual;
+
+import javax.swing.AbstractListModel;
 
 /**
  *
@@ -29,17 +39,36 @@ public class VisualisePopulation_E extends JFrame
 	private double maxFitness1;
 	private double minFitness2;
 	private double maxFitness2;
-	@SuppressWarnings("unused")
-	private int pointWidth;
-	@SuppressWarnings("unused")
-	private int pointHeight;
-	private static final double POINT_SIZE_AS_FRACTION_OF_WINDOW_SIZE = 0.01;
 	private Individual[] population;
+	private JList list;
 
 	public VisualisePopulation_E()
 	{
 		this(0, 1, 0, 1);
 		this.fixedMinMax = false;
+		
+		JPanel panelGraph = new JPanel();
+		getContentPane().add(panelGraph, BorderLayout.CENTER);
+		
+		JScrollPane scrollPane = new JScrollPane();
+		scrollPane.setSize(new Dimension(200, 0));
+		scrollPane.setPreferredSize(new Dimension(200, 2));
+		getContentPane().add(scrollPane, BorderLayout.EAST);
+		
+		list = new JList();
+		list.addListSelectionListener(new ListSelectionListener()
+		{
+			@Override
+			public void valueChanged(ListSelectionEvent e)
+			{
+				// TODO Auto-generated method stub
+				if (list.getSelectedIndex() != -1)
+				{
+					new FacadeUI(population[list.getSelectedIndex()]);
+				}
+			}
+		});
+		scrollPane.setViewportView(list);
 	}
 
 	public VisualisePopulation_E(double minFitness1, double maxFitness1,
@@ -51,27 +80,18 @@ public class VisualisePopulation_E extends JFrame
 		this.minFitness2 = minFitness2;
 		this.maxFitness2 = maxFitness2;
 		this.setTitle("Visualise Population");
-		this.setSize(900, 650);
+		this.setSize(1100, 650);
 		this.setVisible(true);
 		this.population = null;
 		this.setDefaultCloseOperation(EXIT_ON_CLOSE);
 		this.setResizable(false);
 	}
 
-	public void setSize(int width, int height)
-	{
-		super.setSize(width, height);
-		this.pointWidth = Math.max(1,
-				(int) (width * POINT_SIZE_AS_FRACTION_OF_WINDOW_SIZE));
-		this.pointHeight = Math.max(1,
-				(int) (height * POINT_SIZE_AS_FRACTION_OF_WINDOW_SIZE));
-	}
-
 	public void updatePopulation(Individual[] pop)
 	{
 		if (!fixedMinMax)
 		{
-System.out.println("HERE");
+			System.out.println("HERE");
 			double min1 = Double.POSITIVE_INFINITY;
 			double min2 = Double.POSITIVE_INFINITY;
 			double max1 = Double.NEGATIVE_INFINITY;
@@ -118,7 +138,7 @@ System.out.println("HERE");
 		Rectangle bounds = this.getBounds();// g2.getClipBounds();
 		bounds.setLocation(0, 0); // okay, we don't want to include the window's
 									// coords for internal drawing!
-		g2.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
+		g2.fillRect(bounds.x, bounds.y, bounds.width - 200, bounds.height);
 
 		// draw axes
 		int axisOffset = 50;
@@ -130,6 +150,8 @@ System.out.println("HERE");
 
 		// trim the bounds to omit the axes (y coord is same as that's at top of
 		// window)
+		
+		Rectangle trimmedBounds = new Rectangle(bounds.x + axisOffset, bounds.y, bounds.width - (axisOffset + 200), bounds.height - axisOffset);
 		
 		// add tic marks
 		int textHeight = 20;
@@ -150,7 +172,7 @@ System.out.println("HERE");
 		double yTicInterval = (maxFitness2 - minFitness2) / (numYTics);
 //		System.out.println("yTicInterval ss "  + yTicInterval);
 		
-		int xTicCoordStep = (bounds.width ) / (numXTics);
+		int xTicCoordStep = (trimmedBounds.width ) / (numXTics);
 		int yTicCoordStep = (bounds.height - axisOffset) / (numYTics);
 		
 //		System.out.println(yTicCoordStep);
@@ -158,7 +180,8 @@ System.out.println("HERE");
 		double nextTicVal = minFitness1;
 		for (int j = 0; j < numXTics; j++)
 		{
-			int ticX = (bounds.x + axisOffset) + (xTicCoordStep * j);
+//			int ticX = (bounds.x + axisOffset) + (xTicCoordStep * j);
+			int ticX = trimmedBounds.x + (xTicCoordStep * j);
 			
 			g2.drawLine(ticX, xAxisYPos + ticSize, ticX, xAxisYPos - ticSize);
 			
@@ -212,7 +235,8 @@ System.out.println("HERE");
 				// System.out.println("A:" + i.getFitness1() + ":" + n1);
 				// System.out.println("B:" + i.getFitness2() + ":" + n2);
 
-				int x = bounds.x + (int) (((i.getFitness1() - minFitness1) / (maxFitness1 - minFitness1)) * (bounds.width - axisOffset)) + axisOffset;
+//				int x = bounds.x + (int) (((i.getFitness1() - minFitness1) / (maxFitness1 - minFitness1)) * (bounds.width - axisOffset)) + axisOffset;
+				int x = trimmedBounds.x + (int) (((i.getFitness1() - minFitness1) / (maxFitness1 - minFitness1)) * (trimmedBounds.width));
 				
 				int y = (bounds.y) + (int) ((bounds.height - axisOffset)
 						- ((i.getFitness2() / (maxFitness2 - minFitness2))
@@ -220,9 +244,35 @@ System.out.println("HERE");
 
 				g2.fillArc(x, y, 7, 7, 0, 360);
 			} // end of loop over population
+			list.setModel(setListModel(population));
 		}
+		
 	}
 
+	private ListModel<String> setListModel(Individual[] population)
+	{
+		String[] values = new String[population.length];
+		for (int i = 0; i < population.length; i++)
+			values[i] = String.format("%d %.4f", (i + 1), population[i].getFitness1());
+		
+		return new AbstractListModel<String>() {
+			/** Default serial ID. */
+			private static final long serialVersionUID = 1L;
+
+			@Override
+			public int getSize()
+			{
+				return values.length;
+			}
+
+			@Override
+			public String getElementAt(int index)
+			{
+				return values[index];
+			}
+		};
+	}
+	
 	private double roundDouble(double d, int decimalPlaces)
 	{
 		BigDecimal round = new BigDecimal(d).setScale(decimalPlaces,

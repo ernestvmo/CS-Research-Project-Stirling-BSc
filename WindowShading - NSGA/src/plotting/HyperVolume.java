@@ -5,7 +5,7 @@ import java.util.List;
 
 import Optimisation.Individual;
 
-public class Plotting
+public class HyperVolume
 {
 	/**
 	 * This method calculates the hypervolume of the passed population from a set reference point.

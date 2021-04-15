@@ -1,6 +1,7 @@
 package Optimisation;
 
-import java.math.BigDecimal;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -12,11 +13,10 @@ import org.apache.commons.math3.stat.correlation.SpearmansCorrelation;
 
 import WindowShading.WindowShadingFitnessFunction;
 import main.Loader;
-import plotting.PredictedPlotting;
-import plotting.Spearman;
-import plotting.FacadeUI;
-import plotting.Plotting;
+import plotting.HyperVolume;
 import regression.Model;
+import ui.FacadeUI;
+import ui.VisualisePopulation_E;
 
 /**
  * Class for the Non-dominated Sorting Genetic Algorithm.
@@ -36,8 +36,8 @@ public class NSGA2_E
 	/** Number of threads running at the same time. */
 	private int numThreads = 10;
 	/** Total number of evaluations. */
-	private int maxEvals = 5000;
-
+	private int maxEvals = 1;
+	
 	// ************* NSGA-2 options *************
 	/** Selection rate. */
 	private double selectionRate = 0.5;
@@ -51,6 +51,13 @@ public class NSGA2_E
 	
 	private double[][] presetData;
 
+	private boolean energyplus = false;
+	private boolean condition;
+	private boolean useCondition = false;
+
+	private Instant start;
+	private Instant end;
+	
 	/**
 	 * Constructor object for the NSGA.
 	 */
@@ -60,6 +67,7 @@ public class NSGA2_E
 		r = new Random();
 	}
 
+	// TODO implement ran time
 	
 	public void prebuildModel()
 	{
@@ -86,93 +94,79 @@ public class NSGA2_E
 
 		VisualisePopulation_E vp = new VisualisePopulation_E();
 		
-		// 1 - initialize random population
+		// capture the time when the NSGA starts
+		start = Instant.now();
+		
 		Individual[] initial = new Individual[numSolutions];
 		initial[0] = new Individual(new boolean[windowsCount]);
 		for (int i = 1; i < initial.length; i++)
 		{
 			initial[i] = new Individual(windowsCount, r);
 		}
-		
-		evaluatePopulation(initial, false);
+		evaluatePopulation(initial, energyplus);
 		initial = ascendList(nonDominatedSort(initial));
 		
-		// 2 - offspring
+		
+		
 		Individual[] offspring = createOffspring(initial);
-		evaluatePopulation(offspring, false);
+		evaluatePopulation(offspring, energyplus);
 
-		// System.out.println("TEST OFFSPRING " + offspring[0].getFitness1() + "
-		// " + offspring[0].getFitness2());
+		
+		double firstPopulationHypervolume = HyperVolume.hypervolume(initial);
 
-		// for (Individual i : initial)
-		// {
-		// System.out.println(i.getFitness1() + " " + i.getFitness2());
-		// }
-
-		double firstPopulationHypervolume = Plotting.hypervolume(initial);
-
+		
 		int currentEval = 0;
 		while (currentEval < maxEvals)
 		{
-//			if (currentEval % 25 == 0 && currentEval != 100 && currentEval != 0 && true) 
-			if (currentEval % 500 == 0 && currentEval != 0) 
+			if (useCondition)
 			{
-				System.out.println("MID EVALUATION " + currentEval);
-				double[] surrogateFitness = new double[initial.length];
-				for (int i = 0; i < initial.length; i++)
-				{
-					surrogateFitness[i] = initial[i].getFitness1();
-//					System.out.println(initial[i].getFitness1());
-				}
-				evaluatePopulation(initial, true);
+				condition = currentEval % (maxEvals / 4) == 0;
 				
-				double[] energyFitness = new double[initial.length];
-				for (int i = 0; i < initial.length; i++)
-				{
-					energyFitness[i] = initial[i].getFitness1();
-//					System.out.println(initial[i].getFitness1());
-				}
-				
-				double[][] solutionsToAdd = new double[initial.length][initial[0].getAlleles().length + 1];
-				for (int i = 0; i < initial.length; i++)
-				{
-					for (int j = 0; j < initial[i].getAlleles().length; j++)
-						solutionsToAdd[i][j] = initial[i].getAlleles()[j] ? 1 : 0;
-					solutionsToAdd[i][solutionsToAdd[i].length - 1] = initial[i].getFitness1();
-				}
-				
-				System.out.println("before : " + presetData.length + "  " + presetData[0].length);
-				
-				double[][] newTrainingData = new double[presetData.length + solutionsToAdd.length][presetData[0].length];
-				int tempPointer = 0;
-				for (int i = 0; i < presetData.length; i++)
-				{
-					newTrainingData[tempPointer++] = presetData[i];
-				}
-				
-				for (int i = 0; i < solutionsToAdd.length; i++)
-				{
-					newTrainingData[tempPointer++] = solutionsToAdd[i];
-				}
-				
-				presetData = newTrainingData;
-				
-				System.out.println("see if copy has worked : " + presetData.length + "  " + presetData[0].length);
-				
-				model.setSet(newTrainingData);
-				model.go();
-				try
-				{
-					System.out.println("Model eval: " + model.getEvaluation().correlationCoefficient());
+				if (condition && currentEval != 0)
+				{// if the condition is true, the system will re-train the model from the dataset, adding a population evaluated using E+
+					// create a copy for current population
+					Individual[] copy = new Individual[initial.length];
+					for (int i = 0; i < copy.length; i++)
+						copy[i] = new Individual(initial[i].getAlleles());
+					// evaluate copy
+					evaluatePopulation(copy, true);
 					
-					System.out.println(new SpearmansCorrelation().correlation(energyFitness, surrogateFitness));
-				}
-				catch (Exception e)
-				{
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+					// create a 2D arrays for all the individuals 120 windows + energy consumption.
+					double[][] solutionsToAdd = new double[initial.length][initial[0].getAlleles().length + 1];
+					for (int i = 0; i < initial.length; i++)
+					{// assign each solutions
+						for (int j = 0; j < initial[i].getAlleles().length; j++)
+							solutionsToAdd[i][j] = initial[i].getAlleles()[j] ? 1 : 0;
+						solutionsToAdd[i][solutionsToAdd[i].length - 1] = initial[i].getFitness1();
+					}
+					
+					// create a new training data 2D array
+					double[][] newTrainingData = new double[presetData.length + solutionsToAdd.length][presetData[0].length];
+					int tempPointer = 0;
+					for (int i = 0; i < presetData.length; i++)
+						newTrainingData[tempPointer++] = presetData[i];
+					for (int i = 0; i < solutionsToAdd.length; i++)
+						newTrainingData[tempPointer++] = solutionsToAdd[i];
+					
+					// set training data to new data
+					presetData = newTrainingData;
+					
+					// set the model's training data
+					model.setSet(newTrainingData);
+					// build the model again
+					model.go();
+					
+//					try
+//					{
+//						System.out.println("Model eval: " + model.getEvaluation().correlationCoefficient());
+//					}
+//					catch (Exception e)
+//					{
+//						e.printStackTrace();
+//					}
 				}
 			}
+			
 			
 			Individual[] R = new Individual[initial.length + offspring.length];
 			int p = 0;
@@ -212,78 +206,80 @@ public class NSGA2_E
 			}
 
 			offspring = createOffspring(initial);
-			evaluatePopulation(offspring, false);
+			evaluatePopulation(offspring, energyplus);
 
+			
+			
 			currentEval++;
 			// System.out.println("eval: " + currentEval);
 		}
+		
+		// capture the time when the loop ends
+		end = Instant.now();
 
 		System.out.println("DONE");
 		vp.updatePopulation(initial);
-		// displayPopulation(initial);
 
-//		for (Individual i : initial)
-//		{
-//			System.out.println(i.getFitness1() + " " + i.getFitness2());
-//		}
-
-		double lastPopulationHypervolume = Plotting.hypervolume(initial);
+		double lastPopulationHypervolume = HyperVolume.hypervolume(initial);
 		
-		// TODO : boxplot
+		System.out.println("First pop HV: " + firstPopulationHypervolume);
+		System.out.println("Last pop HV:  " + lastPopulationHypervolume);
+		System.out.println("Improvement HV: " + (lastPopulationHypervolume - firstPopulationHypervolume));
+		System.out.println("Percentage HV: " + (lastPopulationHypervolume - firstPopulationHypervolume)/ lastPopulationHypervolume*100);
 		
-		System.out.println("First: " + firstPopulationHypervolume);
-		System.out.println("Last:  " + lastPopulationHypervolume);
-		System.out.println("Improvement: " + (lastPopulationHypervolume - firstPopulationHypervolume));
-		
+		// Display the pareto solutions
 		for (Individual i : initial)
 			if (i.rank == 0)
 				new FacadeUI(i);
 		
-		calculateCorrelations(initial);
+		Individual[] energyPlus = new Individual[initial.length];
+		for (int i = 0; i < energyPlus.length; i++)
+			energyPlus[i] = new Individual(initial[i].getAlleles());
+		evaluatePopulation(energyPlus, true);
 		
+		System.out.println(Duration.between(start, end));
 		
+//		calculateCorrelations(initial, energyPlus);
 		
-		
-//		System.out.println("Surrogate");
-//		for (Individual i : surrogate)
-//			System.out.println(i.toString());
-//		evaluatePopulation(initial, true);
-//		System.out.println("EnergyPlus");
-//		for (Individual i : initial)
-//			System.out.println(i.toString());
-
-		
-		// Boxplot
-//		if (true) {
-//			boxplot(initial);
-//		}
+//		ResultsWriter.writeResults(maxEvals, initial, energyPlus, firstPopulationHypervolume, lastPopulationHypervolume, Duration.between(start, end), useCondition);
 	}
 
-	private void calculateCorrelations(Individual[] initial)
+	/**
+	 * This method calculates calls the method that calculte  the MAE and Spearman correlation.
+	 * 
+	 * @param surrogate The last population evaluated with the model.
+	 * @param energyplus The last population evaluated with EnergyPlus.
+	 */
+	private void calculateCorrelations(Individual[] surrogate, Individual[] energyplus)
 	{
-		double[] surrogateFitness = new double[initial.length];
-		for (int i = 0; i < initial.length; i++)
+		System.out.println("Surrogate");
+		double[] surrogateFitness = new double[surrogate.length];
+		for (int i = 0; i < surrogate.length; i++)
 		{
-			surrogateFitness[i] = initial[i].getFitness1();
-//			System.out.println(initial[i].getFitness1());
+			surrogateFitness[i] = surrogate[i].getFitness1();
+			System.out.println(surrogate[i].toString());
 		}
 		
-		evaluatePopulation(initial, true);
-
-		double[] energyFitness = new double[initial.length];
-		for (int i = 0; i < initial.length; i++)
+		System.out.println("EnergyPlus");
+		double[] energyFitness = new double[energyplus.length];
+		for (int i = 0; i < energyplus.length; i++)
 		{
-			energyFitness[i] = initial[i].getFitness1();
-//			System.out.println(initial[i].getFitness1());
+			energyFitness[i] = energyplus[i].getFitness1();
+			System.out.println(energyplus[i].toString());
 		}
 			
-		// DIFFERENTE CORRELATIONS SECTIONS
-		
+		// DIFFERENT CORRELATIONS SECTIONS
 		System.out.println("MAE : " + calculateMAE(energyFitness, surrogateFitness));
 		System.out.println("SPEARMAN : " + calculateSpearmanCorrel(energyFitness, surrogateFitness));
 	}
 	
-	
+	/**
+	 * This method calculates the average MAE.
+	 * 
+	 * @param energyF The last population evaluated with EnergyPlus.
+	 * @param surrogateF The last population evaluated with the model.
+	 * @return
+	 */
 	private double calculateMAE(double[] energyF, double[] surrogateF)
 	{
 		double mae = 0;
@@ -297,33 +293,9 @@ public class NSGA2_E
 	
 	private double calculateSpearmanCorrel(double[] energyF, double[] surrogateF)
 	{
-//		Spearman spearman = new Spearman(energyF, surrogateF);
-//		return spearman.calculateCorrelation();
-		
-		Spearman spearman = new Spearman(energyF, surrogateF);
-		return spearman.calcCorrel();
+		return new SpearmansCorrelation().correlation(energyF, surrogateF);
  	}
 	
-	private void boxplot(Individual[] initial) {
-		Individual[] B = new Individual[initial.length];
-		for (int i = 0; i < B.length; i++)
-			B[i] = new Individual(ff, initial[i].getAlleles());
-		evaluatePopulation(B, true);
-		double[] calculatedEnergy = new double[initial.length];
-		double[] predictedEnergy = new double[initial.length];
-		for (int i = 0; i < initial.length; i++) {
-			calculatedEnergy[i] = B[i].getFitness1();
-			predictedEnergy[i] = initial[i].getFitness1(); 
-		}
-
-		for (double val : predictedEnergy)
-			System.out.println(val);
-		for (double val : calculatedEnergy)
-			System.out.println(val);
-		
-		new PredictedPlotting(calculatedEnergy, predictedEnergy);
-	}
-
 	/**
 	 * This method evaluates the passed array of Individuals.
 	 * Uses Threads to evaluate a population faster.
@@ -339,19 +311,13 @@ public class NSGA2_E
 		if (!energyplus)
 			for (int i = 0; i < numThreads; i++)
 			{
-				evals[i] = new EvaluationThread(P, numberPerThreads * i,
-						((i < numThreads - 1)
-								? (numberPerThreads * (i + 1))
-								: P.length));
+				evals[i] = new EvaluationThread(P, numberPerThreads * i, ((i < numThreads - 1) ? (numberPerThreads * (i + 1)) : P.length));
 				evals[i].start();
 			}
 		else
 			for (int i = 0; i < numThreads; i++)
 			{
-				evals[i] = new EvaluationThread(P, numberPerThreads * i,
-						((i < numThreads - 1)
-								? (numberPerThreads * (i + 1))
-								: P.length), true);
+				evals[i] = new EvaluationThread(P, numberPerThreads * i, ((i < numThreads - 1) ? (numberPerThreads * (i + 1)) : P.length), true);
 				evals[i].start();
 			}
 
@@ -688,25 +654,4 @@ public class NSGA2_E
 		}
 	}
 
-	/**
-	 * Mutator method for the surrogate model object.
-	 * 
-	 * @param m The surrogate model.
-	 */
-//	public void setModel(Model m)
-//	{
-//		this.model = m;
-//	}
-
-	private void displayPopulation(Individual[] P)
-	{
-		for (Individual i : P)
-		{
-			for (int j = 0; j < i.getAlleles().length; j++)
-			{
-				System.out.print(i.getAlleles()[j] ? "1" : "0");
-			}
-			System.out.println();
-		}
-	}
 }
