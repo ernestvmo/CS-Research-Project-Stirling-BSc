@@ -111,52 +111,6 @@ public class Model
 		return newSet;
 	}
 	
-	/**
-	 * Retrain the model with an additional set.
-	 * 
-	 * @param addition The values to add to the training set.
-	 */
-//	public void retrain(double[][] addition)
-//	{
-//		addToInstances(addition);
-//		
-//		System.out.println(trainingSet.size());
-		
-//		retrain();
-//	}
-//	
-//	/**
-//	 * Retrain the model.
-//	 */
-//	public void retrain()
-//	{
-//		build(trainingSet, null);
-//
-//		try
-//		{
-//			Evaluation evaluation = new Evaluation(trainingSet);
-//			evaluation.evaluateModel(mlp, createSet(createModelAttributes(), getTen(addition)));
-//			evaluation.toSummaryString();
-//		}
-//		catch (Exception e)
-//		{
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
-//	}
-	
-	/**
-	 * Add the passed values into the training data.
-	 * 
-	 * @param addition The new values to add.
-	 */
-//	private void addToInstances(double[][] addition)
-//	{
-//		for (int i = 0; i < addition.length; i++)
-//		{
-//			trainingSet.add(new DenseInstance(1.0, addition[i]));
-//		}
-//	}
 	
 	/**
 	 * Build the model using the training set.
@@ -202,7 +156,7 @@ public class Model
 		
 		double prediction = 0;
 		
-//		while (prediction < 10000 /*min val*/ || Double.isNaN(prediction)) {
+//		while (prediction < 10000 /*TODO min val*/ || Double.isNaN(prediction)) {
 		while (Double.isNaN(prediction) || !(prediction >= MINIMUM && prediction <= MAXIMUM)) {
 			try {
 				prediction = mlp.classifyInstance(instances.instance(0));

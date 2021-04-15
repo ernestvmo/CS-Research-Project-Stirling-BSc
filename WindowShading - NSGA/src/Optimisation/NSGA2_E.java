@@ -65,10 +65,13 @@ public class NSGA2_E
 	{
 		ff = new WindowShadingFitnessFunction(false, true);
 		r = new Random();
+		// capture the time when the NSGA starts
+		start = Instant.now();
 	}
 
-	// TODO implement ran time
-	
+	/**
+	 * This method is used to train the model before starting the NSGA-2.
+	 */
 	public void prebuildModel()
 	{
 		presetData = Loader.load();
@@ -80,7 +83,6 @@ public class NSGA2_E
 		}
 		catch (Exception e)
 		{
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
@@ -94,8 +96,6 @@ public class NSGA2_E
 
 		VisualisePopulation_E vp = new VisualisePopulation_E();
 		
-		// capture the time when the NSGA starts
-		start = Instant.now();
 		
 		Individual[] initial = new Individual[numSolutions];
 		initial[0] = new Individual(new boolean[windowsCount]);
@@ -278,7 +278,8 @@ public class NSGA2_E
 	 * 
 	 * @param energyF The last population evaluated with EnergyPlus.
 	 * @param surrogateF The last population evaluated with the model.
-	 * @return
+	 * 
+	 * @return The Mean Absolute Error.
 	 */
 	private double calculateMAE(double[] energyF, double[] surrogateF)
 	{
@@ -291,6 +292,14 @@ public class NSGA2_E
 		return mae;
 	}
 	
+	/**
+	 * This method returns the Spearman correlation for passed parameters.
+	 * 
+	 * @param energyF The last population evaluated with EnergyPlus.
+	 * @param surrogateF The last population evaluated with the model.
+	 * 
+	 * @return The Spearman correlation.
+	 */
 	private double calculateSpearmanCorrel(double[] energyF, double[] surrogateF)
 	{
 		return new SpearmansCorrelation().correlation(energyF, surrogateF);
@@ -484,7 +493,6 @@ public class NSGA2_E
 			Individual parent2 = parentSelection(parents);
 
 			// Crossover
-			// TODO: play with different crossover strategies?
 			Individual[] offspring = crossover(parent1, parent2);
 
 			// Mutation
@@ -645,11 +653,10 @@ public class NSGA2_E
 			{
 				Individual i = individuals[j];
 				if (!energyplus)
-					i.surrogateEvaluate(model); // TODO
+					i.surrogateEvaluate(model);
 				else
 					i.energyPlusEvaluate(ff);
-				// System.out.println("SINGLE INDIVIDUAL : " + i.getFitness1() +
-				// " " + i.getFitness2());
+				// System.out.println("SINGLE INDIVIDUAL : " + i.getFitness1() + " " + i.getFitness2());
 			}
 		}
 	}

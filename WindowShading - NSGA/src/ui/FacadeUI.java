@@ -1,25 +1,19 @@
 package ui;
 
-import java.awt.EventQueue;
 
 import javax.swing.JFrame;
-import java.awt.GridLayout;
 import java.awt.BorderLayout;
 import javax.swing.JPanel;
 import javax.swing.JLabel;
 import java.awt.GridBagLayout;
 import java.awt.GridBagConstraints;
 import java.awt.Insets;
-import java.util.Random;
 
 import javax.swing.border.LineBorder;
 
 import Optimisation.Individual;
 
 import java.awt.Color;
-import javax.swing.SwingConstants;
-import java.awt.Component;
-import javax.swing.Box;
 
 public class FacadeUI
 {
@@ -35,10 +29,7 @@ public class FacadeUI
 	}
 
 	/**
-	 * Initialize the contents of the frame.
-	 * 
-	 * TODO : * add the cost and energy values below the graph
-	 *        * better title
+	 * Initialise the contents of the frame.
 	 */
 	private void initialize(boolean[] windows, double energy, double cost, int title)
 	{

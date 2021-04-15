@@ -73,10 +73,12 @@ public class ResultsWriter
 	}
 	
 	/**
+	 * This method calculates the average MAE.
 	 * 
-	 * @param surrogate
-	 * @param energy
-	 * @return
+	 * @param energyF The last population evaluated with EnergyPlus.
+	 * @param surrogateF The last population evaluated with the model.
+	 * 
+	 * @return The Mean Absolute Error.
 	 */
 	private static double calculateMAE(Individual[] surrogate, Individual[] energy)
 	{
@@ -96,10 +98,23 @@ public class ResultsWriter
 			System.out.println(energy[i].toString());
 		}
 		
-		return calculateMAEindiv(energyFitness, surrogateFitness);
+		double mae = 0;
+		for (int i = 0; i < energyFitness.length; i++)
+			mae += (energyFitness[i] - surrogateFitness[i]);
+		
+		mae /= energyFitness.length;
+		
+		return mae;
 	}
 	
-	
+	/**
+	 * This method returns the Spearman correlation for passed parameters.
+	 * 
+	 * @param energyF The last population evaluated with EnergyPlus.
+	 * @param surrogateF The last population evaluated with the model.
+	 * 
+	 * @return The Spearman correlation.
+	 */
 	private static double calculateSpearman(Individual[] surrogate, Individual[] energy)
 	{
 		System.out.println("Surrogate");
@@ -120,16 +135,4 @@ public class ResultsWriter
 			
 		return new SpearmansCorrelation().correlation(surrogateFitness, energyFitness);
 	}
-	
-	private static double calculateMAEindiv(double[] energyF, double[] surrogateF)
-	{
-		double mae = 0;
-		for (int i = 0; i < energyF.length; i++)
-			mae += (energyF[i] - surrogateF[i]);
-		
-		mae /= energyF.length;
-		
-		return mae;
-	}
-	
 }

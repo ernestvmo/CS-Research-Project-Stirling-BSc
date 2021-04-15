@@ -16,8 +16,9 @@ public class Individual
 	private boolean[] alleles;
 	private double fitness1;
 	private double fitness2;
-
-	// NSGA-II specific vars
+	private FitnessFunction ff;
+	
+	// NSGA-II specific variables
 	public Set<Individual> dominatedSet;
 	public int dominationCount;
 	public int rank;
@@ -54,20 +55,20 @@ public class Individual
 	 * @param size The number of windows in the solution.
 	 * @param r Random object to generate a state of randomness in the solution.
 	 */
-//	public Individual(FitnessFunction ff, int size, Random r)
-//	{
-//		boolean[] a = new boolean[size];
-////		for (int i = 0; i < a.length; i++)
-////		{
-////			a[i] = r.nextBoolean();
-////		}
+	public Individual(FitnessFunction ff, int size, Random r)
+	{
+		boolean[] a = new boolean[size];
 //		for (int i = 0; i < a.length; i++)
 //		{
-//			a[i] = r.nextDouble() < ((double) i / 100);
+//			a[i] = r.nextBoolean();
 //		}
-//
-//		init(ff, a);
-//	}
+		for (int i = 0; i < a.length; i++)
+		{
+			a[i] = r.nextDouble() < ((double) i / 100);
+		}
+
+		init(ff, a);
+	}
 
 	/**
 	 * Constructor for an Individual solution from a set windows.
@@ -87,10 +88,10 @@ public class Individual
 	 * @param ff FitnessFunction to evaluate the solution, fitness values.
 	 * @param alleles The array of boolean representing windows.
 	 */
-//	public Individual(FitnessFunction ff, boolean[] alleles)
-//	{
-//		init(ff, alleles);
-//	}
+	public Individual(FitnessFunction ff, boolean[] alleles)
+	{
+		init(ff, alleles);
+	}
 
 	/**
 	 * Initialises values to their default state.
@@ -110,13 +111,13 @@ public class Individual
 	 * @param ff FitnessFunction to evaluate the solution, fitness values.
 	 * @param alleles The array of boolean representing windows.
 	 */
-//	private void init(FitnessFunction ff, boolean[] alleles)
-//	{
-//		this.ff = ff;
-//		this.alleles = alleles;
-//		fitness1 = Double.NaN;
-//		fitness2 = Double.NaN;
-//	}
+	private void init(FitnessFunction ff, boolean[] alleles)
+	{
+		this.ff = ff;
+		this.alleles = alleles;
+		fitness1 = Double.NaN;
+		fitness2 = Double.NaN;
+	}
 
 	/**
 	 * call the evaluator and evaluate - regardless of whether or not it's
@@ -230,20 +231,6 @@ public class Individual
 
 		return fitness2;
 	}
-
-	/**
-	 * 
-	 * @return
-	 */
-//	public double getOverallConstraintViolation()
-//	{
-////		if (Double.isNaN(overallConstraintViolation))
-////		{
-////			forceEvaluate();
-////		}
-//
-//		return overallConstraintViolation;
-//	}
 
 	/* (non-Javadoc)
      * @see java.lang.Object#toString()

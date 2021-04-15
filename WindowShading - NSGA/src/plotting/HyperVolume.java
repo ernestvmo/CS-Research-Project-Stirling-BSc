@@ -29,14 +29,8 @@ public class HyperVolume
 			paretoPoints[i][1] = paretoOptimals.get(i).getFitness2();
 		}
 
-//		for (double[] pp : paretoPoints)
-//		{
-//			for (double p : pp)
-//				System.out.print(p + " ");
-//			System.out.println();
-//		}
-
-		double[] referencePoint = {50000, 100000};
+		// reference point out of the possible bounds
+		double[] referencePoint = {50000, 50000};
 		double volume = 0;
 		
 		for (int i = 0; i < paretoPoints.length; i++)
